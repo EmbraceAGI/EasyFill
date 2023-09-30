@@ -61,6 +61,11 @@ const style = `
         background-color: #93B1A6;
     }
 
+    .settings-submit:disabled {
+        background-color: #B4B4B3;  /* 灰色背景 */
+        color: #808080;            /* 深灰色文字 */
+        cursor: not-allowed;       /* 禁用的光标样式 */
+    }
 `;
 
 
@@ -145,9 +150,18 @@ const setting_new_setting_text = `新设置名称
         settingsDropdown.addEventListener('change', (e) => {
             const selectedIndex = e.target.value;
             textarea.value = setting_texts[selectedIndex];
+            if (setting_texts.length <= 1) {
+                deleteSettingButton.disabled = true;
+            } else {
+                deleteSettingButton.disabled = false;
+            }
         });
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '10px';  // 两个按钮之间的间距
+
         const newSettingButton = document.createElement('button');
-        newSettingButton.textContent = 'Add New Setting';
+        newSettingButton.textContent = '添加新设置';
         newSettingButton.className = 'settings-submit';
         newSettingButton.addEventListener('click', () => {
             textarea.value = setting_new_setting_text;
@@ -157,12 +171,55 @@ const setting_new_setting_text = `新设置名称
             option.text = setting_new_setting_text.split('\n')[0];
             settingsDropdown.appendChild(option);
             settingsDropdown.value = setting_texts.length - 1;
-
+            deleteSettingButton.disabled = false;
         });
+        const deleteSettingButton = document.createElement('button');
+        deleteSettingButton.textContent = '删除当前设置';
+        deleteSettingButton.className = 'settings-submit';
+        deleteSettingButton.addEventListener('click', () => {
+            // 如果只剩一个设置，则不进行删除操作
+            if (setting_texts.length <= 1) {
+                return;
+            }
+
+            let toDelete = settingsDropdown.selectedIndex;
+
+            // 从 setting_texts 数组中删除设置
+            setting_texts.splice(toDelete, 1);
+
+            // 从 settingsDropdown 中删除对应的选项
+            settingsDropdown.remove(toDelete);
+
+            // 如果删除的是第0项或列表中的最后一项，则默认选择第0项
+            if (toDelete === 0 || toDelete === setting_texts.length) {
+                settingsDropdown.selectedIndex = 0;
+                setting_current_index = 0;
+            } else {
+                // 否则选择之前的项
+                settingsDropdown.selectedIndex = toDelete - 1;
+                setting_current_index = toDelete - 1;
+            }
+
+            // 更新文本区的值为当前选中的设置
+            textarea.value = setting_texts[setting_current_index];
+
+            // 保存到 localStorage
+            localStorage.setItem('setting_texts', JSON.stringify(setting_texts));
+            localStorage.setItem('setting_current_index', setting_current_index);
+
+            deleteSettingButton.disabled = setting_texts.length <= 1;
+        });
+        
+        // 检查是否只剩一个设置，如果是，则禁用删除按钮
+        if (setting_texts.length <= 1) {
+            deleteSettingButton.disabled = true;
+        }        
+
+        buttonsContainer.appendChild(newSettingButton);
+        buttonsContainer.appendChild(deleteSettingButton);
+
         modalContent.appendChild(settingsDropdown);
-        modalContent.appendChild(newSettingButton);
-
-
+        modalContent.appendChild(buttonsContainer); 
         modalContent.appendChild(textarea);
         modalContent.appendChild(submitButton);
         modal.appendChild(modalContent);
@@ -176,11 +233,17 @@ const setting_new_setting_text = `新设置名称
         });
 
         submitButton.addEventListener('click', () => {
-            const selectedSettingIndex = settingsDropdown.value;
+            const selectedSettingIndex = settingsDropdown.selectedIndex;
+            if (typeof setting_texts[selectedSettingIndex] === 'undefined') {
+                console.error("Trying to save a setting that doesn't exist.");
+                return;
+            }
+        
             setting_texts[selectedSettingIndex] = textarea.value;
             localStorage.setItem('setting_texts', JSON.stringify(setting_texts));
-            localStorage.setItem('setting_current_index', selectedSettingIndex);
+            localStorage.setItem('setting_current_index', selectedSettingIndex.toString());
             current_setting_text = textarea.value;
+            setting_current_index = selectedSettingIndex;
             if (current_setting_text) {
                 parseSettingsText(current_setting_text);
                 const targetElement = document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
