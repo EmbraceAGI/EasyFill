@@ -17,7 +17,7 @@ const style = `
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.7); /* 调整背景透明度 */
+        background-color: rgba(0, 0, 0, 0.7);;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -25,11 +25,11 @@ const style = `
     }
 
     .settings-content {
-        background-color: #444; /* 更深的背景色 */
-        color: #fff; /* 文字颜色为白色 */
+        background-color: #183D3D;
+        color: #183D3D;
         padding: 20px;
         width: 50%;
-        height: 80%; /* 修改高度为80% */
+        height: 80%; 
         overflow-y: auto;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         border-radius: 10px;
@@ -42,15 +42,15 @@ const style = `
         width: 100%;
         height: calc(100% - 60px); /* 为了留出一些空间给提交按钮 */
         resize: vertical;
-        background-color: #fff; /* 背景颜色为白色 */
-        color: #000; /* 文字颜色为黑色 */
+        background-color: #93B1A6;
+        color: #191717;
         padding: 10px; /* 添加一些内边距 */
         border-radius: 5px; /* 添加一些圆角 */
     }
 
     .settings-submit {
-        background-color: #007BFF; /* 蓝色背景 */
-        color: #fff; /* 白色文字 */
+        background-color: #5C8374;
+        color: #183D3D;
         padding: 10px 15px; /* 内边距 */
         border: none; /* 无边框 */
         border-radius: 5px; /* 圆角 */
@@ -58,7 +58,7 @@ const style = `
     }
 
     .settings-submit:hover {
-        background-color: #0056b3; /* 悬停时的背景色 */
+        background-color: #93B1A6; 
     }
 `;
 
@@ -84,7 +84,7 @@ const SETTINGS_BUTTON_ID = "custom-settings-button";
 🚀 直接发送
 带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。
 `;
-    setting_text = localStorage.getItem('setting_text') || setting_text;  // 从localStorage中读取设置
+    setting_text = localStorage.getItem('setting_text') || setting_text; // 从localStorage中读取设置
 
     function parseSettingsText(settingsText) {
         menus.length = 0; // Clear the existing array
@@ -138,7 +138,7 @@ const SETTINGS_BUTTON_ID = "custom-settings-button";
 
         submitButton.addEventListener('click', () => {
             setting_text = textarea.value;
-            localStorage.setItem('setting_text', setting_text);  // 保存设置到localStorage
+            localStorage.setItem('setting_text', setting_text); // 保存设置到localStorage
             if (setting_text) {
                 parseSettingsText(setting_text);
                 const targetElement = document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
