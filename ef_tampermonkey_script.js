@@ -84,6 +84,7 @@ const SETTINGS_BUTTON_ID = "custom-settings-button";
 🚀 直接发送
 带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。
 `;
+    setting_text = localStorage.getItem('setting_text') || setting_text;  // 从localStorage中读取设置
 
     function parseSettingsText(settingsText) {
         menus.length = 0; // Clear the existing array
@@ -137,6 +138,7 @@ const SETTINGS_BUTTON_ID = "custom-settings-button";
 
         submitButton.addEventListener('click', () => {
             setting_text = textarea.value;
+            localStorage.setItem('setting_text', setting_text);  // 保存设置到localStorage
             if (setting_text) {
                 parseSettingsText(setting_text);
                 const targetElement = document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
