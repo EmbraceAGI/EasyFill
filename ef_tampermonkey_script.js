@@ -12,13 +12,15 @@ const setting_usage_text = `使用说明
 🪄🪄🪄🪄🪄🪄🪄🪄
 填充
 每个按钮对应一个预设好的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
+如果没有选中，且不是直接发送的按钮，你的光标会停留在 __PLACE_HOLDER__ 处让你补充。
 🪄🪄🪄🪄🪄🪄🪄🪄
 🚀 直接发送
 带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
-const setting_new_setting_text = `新设置名称
+
+const setting_new_setting_text = `新功能组名称
 🪄🪄🪄🪄🪄🪄🪄🪄
-按钮名称
-这里写你的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
+第一行是按钮名称
+第二行开始是prompt。{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
 🪄🪄🪄🪄🪄🪄🪄🪄
 🚀 直接发送的按钮
 带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
@@ -48,7 +50,7 @@ const default_setting_texts = [
 {__PLACE_HOLDER__} 
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 中译英
+中译英
 请帮我用最地道的方式帮我把下面这段话翻译成英文。
 
 待翻译的内容：
@@ -56,7 +58,7 @@ const default_setting_texts = [
 {__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 学单词
+🚀学单词
 '''
 {__PLACE_HOLDER__}
 '''
@@ -67,24 +69,27 @@ const default_setting_texts = [
 3. 请给出更多例句
 4. 如果有容易混淆的单词，请给出对比
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 深入解释
-我不太理解这段文字的具体含义，能否结合上下文，给我一个更深入的解释？
+🚀深入解释
+我不太理解这段文字的具体含义，能否结合上下文，给我一个更深入的中文解释？
+解释时请着重讲解其中有难度的字词句。
 如果有可能，请为我提供背景知识以及你的观点。
 '''
 {__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-出封闭题
-请对下面这段文字，按照托福阅读理解的难度，用英文为我出三道有标准答案的封闭题。
+🚀封闭题
+请对下面这段文字，按照托福阅读理解的难度，用英文为我出三道有标准答案的问答题。
+请等待我回答后，再告诉我标准答案，并加以解释。
 '''
 {__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-出开放题
+🚀开放题
 请对下面这段文字，按照托福口语和作文的难度，用英文为我出一道开放题，我们来进行探讨。
 '''
 {__PLACE_HOLDER__}
 '''
+    
 `,
 setting_usage_text
 ];
@@ -156,8 +161,8 @@ styleSheet.type = "text/css";
 styleSheet.innerText = style;
 document.head.appendChild(styleSheet);
 const SETTINGS_BUTTON_ID = "custom-settings-button";
-const LSID_SETTING_TEXTS = 'setting_texts_v2';
-const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v2';
+const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
+const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
 
 
 (function() {
@@ -228,7 +233,7 @@ const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v2';
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.gap = '10px';  // 两个按钮之间的间距
         const newSettingButton = document.createElement('button');
-        newSettingButton.textContent = '添加新设置';
+        newSettingButton.textContent = '添加新功能组';
         newSettingButton.className = 'settings-submit';
         newSettingButton.addEventListener('click', () => {
             textarea.value = setting_new_setting_text;
@@ -241,7 +246,7 @@ const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v2';
             deleteSettingButton.disabled = false;
         });
         const deleteSettingButton = document.createElement('button');
-        deleteSettingButton.textContent = '删除当前设置';
+        deleteSettingButton.textContent = '删除当前功能组';
         deleteSettingButton.className = 'settings-submit';
         deleteSettingButton.addEventListener('click', () => {
             // 如果只剩一个设置，则不进行删除操作
@@ -322,7 +327,7 @@ const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v2';
     }
 
     function addSettingsButton(targetElement) {
-        let settingsButtonHtml = getCustomButtonHtml('设置', SETTINGS_BUTTON_ID);
+        let settingsButtonHtml = getCustomButtonHtml('切换功能组', SETTINGS_BUTTON_ID);
 
         let settingsButtonContainer = document.createElement('div');
         settingsButtonContainer.innerHTML = settingsButtonHtml;
@@ -344,14 +349,33 @@ const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v2';
 
             newButton.querySelector('.custom-button').addEventListener('click', function() {
                 let selectedText = window.getSelection().toString();
+            
+                // 获取 {__PLACE_HOLDER__} 的位置
+                let placeholderPosition = content.indexOf('{__PLACE_HOLDER__}');
                 let resultText = content.replace('{__PLACE_HOLDER__}', selectedText);
                 const inputElement = document.getElementById('prompt-textarea');
                 inputElement.value = resultText;
-                if (dispatchEventFlag) {
+
+                // 设置光标位置
+                let cursorPosition;
+                if (placeholderPosition !== -1) {
+                    // 将光标放在替换文本的结束位置
+                    if (selectedText) {
+                        cursorPosition = placeholderPosition + selectedText.length;
+                    } else {
+                        cursorPosition = placeholderPosition;
+                    }
+                } else {
+                    cursorPosition = inputElement.value.length; // 光标放在文本末尾
+                }
+
+                if (dispatchEventFlag && selectedText) {
                     inputElement.dispatchEvent(new Event('input', { 'bubbles': true }));
                 }
+
                 inputElement.focus();
-                inputElement.setSelectionRange(inputElement.value.length, inputElement.value.length);
+                inputElement.setSelectionRange(cursorPosition, cursorPosition);
+            
             });
         });
     }
