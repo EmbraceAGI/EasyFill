@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         EasyFill
-// @namespace    http://easyfill.tool.by.elfe/
+// @namespace    http://easyfill.tool.elfe/
 // @version      0.1
 // @description  Add buttons
 // @author       ElfeXu and GPT4
@@ -8,7 +8,88 @@
 // @grant        none
 // ==/UserScript==
 
-// 请在 ==/UserScript== 之后，但在 (function() { 之前插入以下代码：
+const setting_usage_text = `使用说明
+🪄🪄🪄🪄🪄🪄🪄🪄
+填充
+每个按钮对应一个预设好的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀 直接发送
+带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
+const setting_new_setting_text = `新设置名称
+🪄🪄🪄🪄🪄🪄🪄🪄
+按钮名称
+这里写你的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀 直接发送的按钮
+带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
+
+const default_setting_texts = [
+    `英语练习
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀启动
+你是我的英语老师，我需要你陪我练习英语，准备托福考试。
+请**用英语和我对话**，涉及英语例句、题目和话题探讨时请用托福水平的书面英语，但在我明确提出需要时切换到中文。
+为了让我的学习更愉悦，请用轻松的语气，并添加一些 emoji。
+接下来我会给你一篇英文文章，请记住文章，然后我会向你请求帮助。
+如果你理解了，请说 Let's begin！
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀英译中
+请帮我把下面这段话翻译直译成中文，不要遗漏任何信息。
+然后请判断文字是否符合中文表达习惯，如果不太符合，请重新意译，在遵循愿意的前提下让内容更通俗易懂。
+输出格式应该是
+
+直译：直译的内容
+---
+（如果有必要的话）意译：意译的内容
+
+
+待翻译的内容：
+'''
+{__PLACE_HOLDER__} 
+'''
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀 中译英
+请帮我用最地道的方式帮我把下面这段话翻译成英文。
+
+待翻译的内容：
+'''
+{__PLACE_HOLDER__}
+'''
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀 学单词
+'''
+{__PLACE_HOLDER__}
+'''
+
+请帮我学习这个单词
+1. 请给出单词的音标、词性、中文意思、英文意思
+2. 如果我们前面的讨论中出现过这个单词，请结合它的上下文，重点讲解在上下文中单词的意思和用法
+3. 请给出更多例句
+4. 如果有容易混淆的单词，请给出对比
+🪄🪄🪄🪄🪄🪄🪄🪄
+🚀 深入解释
+我不太理解这段文字的具体含义，能否结合上下文，给我一个更深入的解释？
+如果有可能，请为我提供背景知识以及你的观点。
+'''
+{__PLACE_HOLDER__}
+'''
+🪄🪄🪄🪄🪄🪄🪄🪄
+出封闭题
+请对下面这段文字，按照托福阅读理解的难度，用英文为我出三道有标准答案的封闭题。
+'''
+{__PLACE_HOLDER__}
+'''
+🪄🪄🪄🪄🪄🪄🪄🪄
+出开放题
+请对下面这段文字，按照托福口语和作文的难度，用英文为我出一道开放题，我们来进行探讨。
+'''
+{__PLACE_HOLDER__}
+'''
+`,
+setting_usage_text
+];
+
+
 
 const style = `
     .settings-modal {
@@ -75,34 +156,21 @@ styleSheet.type = "text/css";
 styleSheet.innerText = style;
 document.head.appendChild(styleSheet);
 const SETTINGS_BUTTON_ID = "custom-settings-button";
-
-const setting_usage_text = `使用说明
-🪄🪄🪄🪄🪄🪄🪄🪄
-填充
-每个按钮对应一个预设好的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
-🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 直接发送
-带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
-const setting_new_setting_text = `新设置名称
-🪄🪄🪄🪄🪄🪄🪄🪄
-按钮名称
-这里写你的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
-🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 直接发送的按钮
-带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
+const LSID_SETTING_TEXTS = 'setting_texts_v2';
+const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v2';
 
 
 (function() {
     'use strict';
 
     let menus = []
-    let setting_texts = JSON.parse(localStorage.getItem('setting_texts')) || [setting_usage_text];
-    let setting_current_index = localStorage.getItem('setting_current_index') || 0;
+    let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
+    let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
     let current_setting_text = setting_texts[setting_current_index];
 
     function parseSettingsText(settingsText) {
         menus.length = 0; // Clear the existing array
-        const settingLines = settingsText.split("\n").slice(1); // Start from the second line
+        const settingLines = settingsText.split("\n").slice(1); // The first line is setting name. Buttons start from the second line
         const buttonData = settingLines.join("\n").split("🪄🪄🪄🪄🪄🪄🪄🪄");
         buttonData.forEach(data => {
             const lines = data.trim().split("\n");
@@ -122,7 +190,6 @@ const setting_new_setting_text = `新设置名称
             button.parentNode.parentNode.remove();
         });
     }
-
 
     function showSettingsModal() {
         const modal = document.createElement('div');
@@ -156,10 +223,10 @@ const setting_new_setting_text = `新设置名称
                 deleteSettingButton.disabled = false;
             }
         });
+
         const buttonsContainer = document.createElement('div');
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.gap = '10px';  // 两个按钮之间的间距
-
         const newSettingButton = document.createElement('button');
         newSettingButton.textContent = '添加新设置';
         newSettingButton.className = 'settings-submit';
@@ -204,8 +271,8 @@ const setting_new_setting_text = `新设置名称
             textarea.value = setting_texts[setting_current_index];
 
             // 保存到 localStorage
-            localStorage.setItem('setting_texts', JSON.stringify(setting_texts));
-            localStorage.setItem('setting_current_index', setting_current_index);
+            localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
+            localStorage.setItem(LSID_SETTING_CURRENT_INDEX, setting_current_index);
 
             deleteSettingButton.disabled = setting_texts.length <= 1;
         });
@@ -217,7 +284,6 @@ const setting_new_setting_text = `新设置名称
 
         buttonsContainer.appendChild(newSettingButton);
         buttonsContainer.appendChild(deleteSettingButton);
-
         modalContent.appendChild(settingsDropdown);
         modalContent.appendChild(buttonsContainer); 
         modalContent.appendChild(textarea);
@@ -240,13 +306,13 @@ const setting_new_setting_text = `新设置名称
             }
         
             setting_texts[selectedSettingIndex] = textarea.value;
-            localStorage.setItem('setting_texts', JSON.stringify(setting_texts));
-            localStorage.setItem('setting_current_index', selectedSettingIndex.toString());
+            localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
+            localStorage.setItem(LSID_SETTING_CURRENT_INDEX, selectedSettingIndex.toString());
             current_setting_text = textarea.value;
             setting_current_index = selectedSettingIndex;
             if (current_setting_text) {
                 parseSettingsText(current_setting_text);
-                const targetElement = document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
+                const targetElement = getTargetElement();
                 clearCustomButtons(targetElement);
                 addSettingsButton(targetElement);
                 addCustomButtons(targetElement);
@@ -256,10 +322,7 @@ const setting_new_setting_text = `新设置名称
     }
 
     function addSettingsButton(targetElement) {
-        var settingsButtonHtml = '<div class="flex items-center md:items-end"><div data-projection-id="1" style="opacity: 1;">';
-        settingsButtonHtml += '<button class="btn relative btn-neutral -z-0 whitespace-nowrap border-0 md:border custom-button" id="' + SETTINGS_BUTTON_ID + '">设置</button>';
-        settingsButtonHtml += '</div></div>';
-
+        let settingsButtonHtml = getCustomButtonHtml('设置', SETTINGS_BUTTON_ID);
 
         let settingsButtonContainer = document.createElement('div');
         settingsButtonContainer.innerHTML = settingsButtonHtml;
@@ -273,10 +336,7 @@ const setting_new_setting_text = `新设置名称
 
     function addCustomButtons(targetElement) {
         menus.forEach(function([buttonText, content, dispatchEventFlag]) {
-            let buttonHtml = '<div class="flex items-center md:items-end"><div data-projection-id="1" style="opacity: 1;">';
-            buttonHtml += '<button class="btn relative btn-neutral -z-0 whitespace-nowrap border-0 md:border custom-button">' + buttonText + '</button>';
-            buttonHtml += '</div></div>';
-
+            let buttonHtml = getCustomButtonHtml(buttonText, buttonText);
             let buttonContainer = document.createElement('div');
             buttonContainer.innerHTML = buttonHtml;
             let newButton = buttonContainer.firstChild;
@@ -296,8 +356,18 @@ const setting_new_setting_text = `新设置名称
         });
     }
 
+    function getCustomButtonHtml(buttonText, buttonId) {
+        return '<div class="flex items-center md:items-end"><div data-projection-id="1" style="opacity: 1;">' +
+            '<button class="btn relative btn-neutral -z-0 whitespace-nowrap border-0 md:border custom-button" id="' + buttonId + '">' + buttonText + '</button>' +
+            '</div></div>';
+    }
+
+    function getTargetElement() {
+        return document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
+    }
+
     setInterval(function() {
-        const targetElement = document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
+        const targetElement = getTargetElement();
         const existingSettingsButton = document.getElementById(SETTINGS_BUTTON_ID);
         if (!existingSettingsButton) {
             clearCustomButtons(targetElement);
