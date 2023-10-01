@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         EasyFill
 // @namespace    http://easyfill.tool.elfe/
-// @version      0.1
-// @description  Add buttons
-// @author       ElfeXu and GPT4
+// @version      0.2
+// @description  Add a menu for easy filling in OpenAI chat window
+// @author       Elfe & ttmouse & GPT
 // @match        https://chat.openai.com/*
+// @icon         
 // @grant        none
 // ==/UserScript==
 
@@ -25,6 +26,7 @@ const setting_new_setting_text = `新功能组名称
 🪄🪄🪄🪄🪄🪄🪄🪄
 🚀 直接发送的按钮
 带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
+
 
 const default_setting_texts = [
     `英语练习
@@ -98,6 +100,12 @@ setting_usage_text
 
 
 
+
+
+
+const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
+const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
+
 const style = `
     .settings-modal {
         position: fixed;
@@ -113,8 +121,8 @@ const style = `
     }
 
     .settings-content {
-        background-color: #183D3D;
-        color: #183D3D;
+        background-color: #f0f1ee;
+        color: #535e5e;
         padding: 20px;
         width: 50%;
         height: 80%;
@@ -126,23 +134,30 @@ const style = `
         gap: 20px;
     }
 
+    .settings-dropdown {
+        outline: none;
+        border: 0px;
+    }
+
     .settings-textarea {
         width: 100%;
-        height: calc(100% - 60px); /* 为了留出一些空间给提交按钮 */
+        height: calc(100% - 60px); 
         resize: vertical;
-        background-color: #93B1A6;
-        color: #191717;
-        padding: 10px; /* 添加一些内边距 */
-        border-radius: 5px; /* 添加一些圆角 */
+        background-color: #fff;
+        color: #000;
+        border-radius: 0.75em;
+        border: 0px;
+        padding: 18px 18px;
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.024) 0px 0px 5px, rgba(0, 0, 0, 0.05) 0px 1px 2px;
     }
 
     .settings-submit {
-        background-color: #5C8374;
-        color: #183D3D;
-        padding: 10px 15px; /* 内边距 */
-        border: none; /* 无边框 */
-        border-radius: 5px; /* 圆角 */
-        cursor: pointer; /* 当鼠标移上去显示手势 */
+        background-color: #469c7b;
+        color: #fff;
+        padding: 8px 18px;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;    
     }
 
     .settings-submit:hover {
@@ -154,250 +169,280 @@ const style = `
         color: #808080;            /* 深灰色文字 */
         cursor: not-allowed;       /* 禁用的光标样式 */
     }
+
+    #menuContainer {
+        width: auto;
+        display: inline-block;
+        background-color: #fff;
+        color: #000;
+        border-radius: 0.55em;
+        border: 0px;
+        padding: 18px 18px;
+        box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.1) 0px 2px 5px, rgba(0, 0, 0, 0.05) 0px 3px 3px;
+    }
+    
+    #menuContainer button {
+        margin-bottom: 5px;
+    }
+
+    #menuContainer button:disabled {
+        color: #c0c0c0;   
+    }
 `;
 
 
-// 添加此样式到页面上
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = style;
-document.head.appendChild(styleSheet);
-const SETTINGS_BUTTON_ID = "custom-settings-button";
-const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
-const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
+const styleElement = document.createElement('style');
+styleElement.innerHTML = style;
+document.head.appendChild(styleElement);
 
 
-(function() {
-    'use strict';
+let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
+let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
+let current_setting_text = setting_texts[setting_current_index];
 
-    let menus = []
-    let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
-    let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
-    let current_setting_text = setting_texts[setting_current_index];
+async function sendToGPT(template, selectedText, sendDirectly = false) {
+    let placeholderPosition = template.indexOf('{__PLACE_HOLDER__}');
+    let finalText = template.replace('{__PLACE_HOLDER__}', selectedText);
+//    event.preventDefault();
+    const inputElement = document.getElementById('prompt-textarea');
+    inputElement.value = finalText;
 
-    function parseSettingsText(settingsText) {
-        menus.length = 0; // Clear the existing array
-        const buttonData = settingsText.split("🪄🪄🪄🪄🪄🪄🪄🪄").slice(1);
-        buttonData.forEach(data => {
-            const lines = data.trim().split("\n");
-            if (lines.length >= 2) {
-                const name = lines[0];
-                const dispatchFlag = name.includes("🚀");
-                const content = lines.slice(1).join("\n");
-                menus.push([name, content, dispatchFlag]);
-            }
-        });
-    }
-    parseSettingsText(current_setting_text);
-
-    function clearCustomButtons(target) {
-        const existingButtons = target.querySelectorAll('.custom-button');
-        existingButtons.forEach(function(button) {
-            button.parentNode.parentNode.remove();
-        });
+    // 设置光标位置
+    let cursorPosition;
+    if (placeholderPosition !== -1) {
+        // 将光标放在替换文本的结束位置
+        if (selectedText) {
+            cursorPosition = placeholderPosition + selectedText.length;
+        } else {
+            cursorPosition = placeholderPosition;
+        }
+    } else {
+        cursorPosition = inputElement.value.length; // 光标放在文本末尾
     }
 
-    function showSettingsModal() {
-        const modal = document.createElement('div');
-        modal.className = 'settings-modal';
+    if (sendDirectly && selectedText) {
+        const inputEvent = new Event('input', { 'bubbles': true });
+        inputElement.dispatchEvent(inputEvent);
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const sendButton = document.querySelector('[data-testid="send-button"]');
+        if (sendButton) {
+            sendButton.click();
+        }
+    }
 
-        const modalContent = document.createElement('div');
-        modalContent.className = 'settings-content';
+    inputElement.focus();
+    inputElement.setSelectionRange(cursorPosition, cursorPosition);
+}
 
-        const textarea = document.createElement('textarea');
-        textarea.className = 'settings-textarea';
-        textarea.value = current_setting_text;
+// 创建单个菜单项
+function createMenuItem(label, action) {
+  const menuItem = document.createElement('button');
+  menuItem.style.display = 'block';
+  menuItem.innerHTML = label;
+  if (action == null) {
+    menuItem.disabled = true;
+  } else {
+    menuItem.onclick = () => {
+        action();
+        contextMenu.style.display = 'none';
+    };
+  }
+  
+  return menuItem;
+}
 
-        const submitButton = document.createElement('button');
-        submitButton.className = 'settings-submit';
-        submitButton.textContent = 'Apply Settings';
+// 创建上下文菜单
+const contextMenu = document.createElement('div');
+contextMenu.style.display = 'none';
+contextMenu.style.position = 'absolute';
 
-        const settingsDropdown = document.createElement('select');
-        setting_texts.forEach((text, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.text = text.split('\n')[0]; // Assuming the first line is a title or identifier
-            settingsDropdown.appendChild(option);
-        });
-        settingsDropdown.selectedIndex = setting_current_index;
-        settingsDropdown.addEventListener('change', (e) => {
-            const selectedIndex = e.target.value;
-            textarea.value = setting_texts[selectedIndex];
-            if (setting_texts.length <= 1) {
-                deleteSettingButton.disabled = true;
-            } else {
-                deleteSettingButton.disabled = false;
-            }
-        });
+const menuContainer = document.createElement('div');
+menuContainer.id = 'menuContainer';
 
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.style.display = 'flex';
-        buttonsContainer.style.gap = '10px';  // 两个按钮之间的间距
-        const newSettingButton = document.createElement('button');
-        newSettingButton.textContent = '添加新功能组';
-        newSettingButton.className = 'settings-submit';
-        newSettingButton.addEventListener('click', () => {
-            textarea.value = setting_new_setting_text;
-            setting_texts.push(textarea.value);
-            const option = document.createElement('option');
-            option.value = setting_texts.length - 1;
-            option.text = setting_new_setting_text.split('\n')[0];
-            settingsDropdown.appendChild(option);
-            settingsDropdown.value = setting_texts.length - 1;
-            deleteSettingButton.disabled = false;
-        });
-        const deleteSettingButton = document.createElement('button');
-        deleteSettingButton.textContent = '删除当前功能组';
-        deleteSettingButton.className = 'settings-submit';
-        deleteSettingButton.addEventListener('click', () => {
-            // 如果只剩一个设置，则不进行删除操作
-            if (setting_texts.length <= 1) {
-                return;
-            }
+contextMenu.appendChild(menuContainer);
+document.body.appendChild(contextMenu);
 
-            let toDelete = settingsDropdown.selectedIndex;
+function hideContextMenu() {
+    contextMenu.style.display = 'none';
+}
+function showContextMenu(event) {
+    contextMenu.style.left = `${event.clientX}px`;
+    contextMenu.style.top = `${event.clientY}px`;
+    contextMenu.style.display = 'block';
+}
 
-            // 从 setting_texts 数组中删除设置
-            setting_texts.splice(toDelete, 1);
+document.addEventListener('mouseup', function(event) {
+    const selectedText = window.getSelection().toString();
+    if (selectedText.length == 0) {
+        hideContextMenu();
+    } else {
+        showContextMenu(event);
+    }
+});
 
-            // 从 settingsDropdown 中删除对应的选项
-            settingsDropdown.remove(toDelete);
+document.addEventListener('dblclick', function(event) {
+    showContextMenu(event);
+});
 
-            // 如果删除的是第0项或列表中的最后一项，则默认选择第0项
-            if (toDelete === 0 || toDelete === setting_texts.length) {
-                settingsDropdown.selectedIndex = 0;
-                setting_current_index = 0;
-            } else {
-                // 否则选择之前的项
-                settingsDropdown.selectedIndex = toDelete - 1;
-                setting_current_index = toDelete - 1;
-            }
+function showSettingsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'settings-modal';
 
-            // 更新文本区的值为当前选中的设置
-            textarea.value = setting_texts[setting_current_index];
+    const modalContent = document.createElement('div');
+    modalContent.className = 'settings-content';
 
-            // 保存到 localStorage
-            localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
-            localStorage.setItem(LSID_SETTING_CURRENT_INDEX, setting_current_index);
+    const textarea = document.createElement('textarea');
+    textarea.className = 'settings-textarea';
+    textarea.value = current_setting_text;
 
-            deleteSettingButton.disabled = setting_texts.length <= 1;
-        });
-        
-        // 检查是否只剩一个设置，如果是，则禁用删除按钮
+    const submitButton = document.createElement('button');
+    submitButton.className = 'settings-submit';
+    submitButton.textContent = 'Apply Settings';
+
+    const settingsDropdown = document.createElement('select');
+    settingsDropdown.className = 'settings-dropdown';
+    setting_texts.forEach((text, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.text = text.split('\n')[0]; // Assuming the first line is a title or identifier
+        settingsDropdown.appendChild(option);
+    });
+    settingsDropdown.selectedIndex = setting_current_index;
+    settingsDropdown.addEventListener('change', (e) => {
+        const selectedIndex = e.target.value;
+        textarea.value = setting_texts[selectedIndex];
         if (setting_texts.length <= 1) {
             deleteSettingButton.disabled = true;
-        }        
-
-        buttonsContainer.appendChild(newSettingButton);
-        buttonsContainer.appendChild(deleteSettingButton);
-        modalContent.appendChild(settingsDropdown);
-        modalContent.appendChild(buttonsContainer); 
-        modalContent.appendChild(textarea);
-        modalContent.appendChild(submitButton);
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-
-        // Hide the modal when clicking outside the content
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
-        });
-
-        submitButton.addEventListener('click', () => {
-            const selectedSettingIndex = settingsDropdown.selectedIndex;
-            if (typeof setting_texts[selectedSettingIndex] === 'undefined') {
-                console.error("Trying to save a setting that doesn't exist.");
-                return;
-            }
-        
-            setting_texts[selectedSettingIndex] = textarea.value;
-            localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
-            localStorage.setItem(LSID_SETTING_CURRENT_INDEX, selectedSettingIndex.toString());
-            current_setting_text = textarea.value;
-            setting_current_index = selectedSettingIndex;
-            if (current_setting_text) {
-                parseSettingsText(current_setting_text);
-                const targetElement = getTargetElement();
-                clearCustomButtons(targetElement);
-                addSettingsButton(targetElement);
-                addCustomButtons(targetElement);
-            }
-            modal.remove();
-        });
-    }
-
-    function addSettingsButton(targetElement) {
-        let settingsButtonHtml = getCustomButtonHtml('切换功能组', SETTINGS_BUTTON_ID);
-
-        let settingsButtonContainer = document.createElement('div');
-        settingsButtonContainer.innerHTML = settingsButtonHtml;
-        let settingsButton = settingsButtonContainer.firstChild;
-        targetElement.appendChild(settingsButton);
-
-        settingsButton.querySelector('.custom-button').addEventListener('click', function() {
-            showSettingsModal();
-        });
-    }
-
-    function addCustomButtons(targetElement) {
-        menus.forEach(function([buttonText, content, dispatchEventFlag]) {
-            let buttonHtml = getCustomButtonHtml(buttonText, buttonText);
-            let buttonContainer = document.createElement('div');
-            buttonContainer.innerHTML = buttonHtml;
-            let newButton = buttonContainer.firstChild;
-            targetElement.appendChild(newButton);
-
-            newButton.querySelector('.custom-button').addEventListener('click', function() {
-                let selectedText = window.getSelection().toString();
-            
-                // 获取 {__PLACE_HOLDER__} 的位置
-                let placeholderPosition = content.indexOf('{__PLACE_HOLDER__}');
-                let resultText = content.replace('{__PLACE_HOLDER__}', selectedText);
-                const inputElement = document.getElementById('prompt-textarea');
-                inputElement.value = resultText;
-
-                // 设置光标位置
-                let cursorPosition;
-                if (placeholderPosition !== -1) {
-                    // 将光标放在替换文本的结束位置
-                    if (selectedText) {
-                        cursorPosition = placeholderPosition + selectedText.length;
-                    } else {
-                        cursorPosition = placeholderPosition;
-                    }
-                } else {
-                    cursorPosition = inputElement.value.length; // 光标放在文本末尾
-                }
-
-                if (dispatchEventFlag && selectedText) {
-                    inputElement.dispatchEvent(new Event('input', { 'bubbles': true }));
-                }
-
-                inputElement.focus();
-                inputElement.setSelectionRange(cursorPosition, cursorPosition);
-            
-            });
-        });
-    }
-
-    function getCustomButtonHtml(buttonText, buttonId) {
-        return '<div class="flex items-center md:items-end"><div data-projection-id="1" style="opacity: 1;">' +
-            '<button class="btn relative btn-neutral -z-0 whitespace-nowrap border-0 md:border custom-button" id="' + buttonId + '">' + buttonText + '</button>' +
-            '</div></div>';
-    }
-
-    function getTargetElement() {
-        return document.querySelector(".h-full.flex.ml-1.md\\:w-full.md\\:m-auto.md\\:mb-4.gap-0.md\\:gap-2.justify-center");
-    }
-
-    setInterval(function() {
-        const targetElement = getTargetElement();
-        const existingSettingsButton = document.getElementById(SETTINGS_BUTTON_ID);
-        if (!existingSettingsButton) {
-            clearCustomButtons(targetElement);
-            addSettingsButton(targetElement);
-            addCustomButtons(targetElement);
+        } else {
+            deleteSettingButton.disabled = false;
         }
-    }, 1000);
-})();
+    });
+
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.display = 'flex';
+    buttonsContainer.style.gap = '10px';  // 两个按钮之间的间距
+    const newSettingButton = document.createElement('button');
+    newSettingButton.textContent = '添加新功能组';
+    newSettingButton.className = 'settings-submit';
+    newSettingButton.addEventListener('click', () => {
+        textarea.value = setting_new_setting_text;
+        setting_texts.push(textarea.value);
+        const option = document.createElement('option');
+        option.value = setting_texts.length - 1;
+        option.text = setting_new_setting_text.split('\n')[0];
+        settingsDropdown.appendChild(option);
+        settingsDropdown.value = setting_texts.length - 1;
+        deleteSettingButton.disabled = false;
+    });
+    const deleteSettingButton = document.createElement('button');
+    deleteSettingButton.textContent = '删除当前功能组';
+    deleteSettingButton.className = 'settings-submit';
+    deleteSettingButton.addEventListener('click', () => {
+        // 如果只剩一个设置，则不进行删除操作
+        if (setting_texts.length <= 1) {
+            return;
+        }
+
+        let toDelete = settingsDropdown.selectedIndex;
+
+        // 从 setting_texts 数组中删除设置
+        setting_texts.splice(toDelete, 1);
+
+        // 从 settingsDropdown 中删除对应的选项
+        settingsDropdown.remove(toDelete);
+
+        // 如果删除的是第0项或列表中的最后一项，则默认选择第0项
+        if (toDelete === 0 || toDelete === setting_texts.length) {
+            settingsDropdown.selectedIndex = 0;
+            setting_current_index = 0;
+        } else {
+            // 否则选择之前的项
+            settingsDropdown.selectedIndex = toDelete - 1;
+            setting_current_index = toDelete - 1;
+        }
+
+        // 更新文本区的值为当前选中的设置
+        textarea.value = setting_texts[setting_current_index];
+
+        // 保存到 localStorage
+        localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
+        localStorage.setItem(LSID_SETTING_CURRENT_INDEX, setting_current_index);
+
+        deleteSettingButton.disabled = setting_texts.length <= 1;
+    });
+    
+    // 检查是否只剩一个设置，如果是，则禁用删除按钮
+    if (setting_texts.length <= 1) {
+        deleteSettingButton.disabled = true;
+    }        
+
+    buttonsContainer.appendChild(newSettingButton);
+    buttonsContainer.appendChild(deleteSettingButton);
+    modalContent.appendChild(settingsDropdown);
+    modalContent.appendChild(buttonsContainer); 
+    modalContent.appendChild(textarea);
+    modalContent.appendChild(submitButton);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Hide the modal when clicking outside the content
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    submitButton.addEventListener('click', () => {
+        const selectedSettingIndex = settingsDropdown.selectedIndex;
+        if (typeof setting_texts[selectedSettingIndex] === 'undefined') {
+            console.error("Trying to save a setting that doesn't exist.");
+            return;
+        }
+    
+        setting_texts[selectedSettingIndex] = textarea.value;
+        localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
+        localStorage.setItem(LSID_SETTING_CURRENT_INDEX, selectedSettingIndex.toString());
+        current_setting_text = textarea.value;
+        setting_current_index = selectedSettingIndex;
+        if (current_setting_text) {
+            updateMenuItems();
+        }
+        modal.remove();
+    });
+}
+
+let menus = [];
+function parseSettingsText(settingsText) {
+    menus.length = 0; // Clear the existing array
+    const buttonData = settingsText.split("🪄🪄🪄🪄🪄🪄🪄🪄").slice(1);
+    buttonData.forEach(data => {
+        const lines = data.trim().split("\n");
+        if (lines.length >= 2) {
+            const name = lines[0];
+            const dispatchFlag = name.includes("🚀");
+            const content = lines.slice(1).join("\n");
+            menus.push([name, content, dispatchFlag]);
+        }
+    });
+}
+
+function updateMenuItems() {
+    parseSettingsText(current_setting_text);
+
+    menuContainer.innerHTML = '';
+    menus.forEach(menu => {
+        menuContainer.appendChild(createMenuItem(menu[0], async function() {
+            await sendToGPT(menu[1], window.getSelection().toString(), menu[2]);
+        }));
+    });
+
+    menuContainer.appendChild(createMenuItem('------', null));
+
+    menuContainer.appendChild(createMenuItem('设置', function() {
+        showSettingsModal();
+    }));
+
+}
+
+
+updateMenuItems();
