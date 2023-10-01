@@ -18,6 +18,7 @@ const setting_usage_text = `使用说明
 带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
 
 const setting_new_setting_text = `新功能组名称
+下面的 🪄 用于区分功能按钮
 🪄🪄🪄🪄🪄🪄🪄🪄
 第一行是按钮名称
 第二行开始是prompt。{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
@@ -27,6 +28,7 @@ const setting_new_setting_text = `新功能组名称
 
 const default_setting_texts = [
     `英语练习
+先点启动，再贴大段文章，然后需要干啥就选中了文字点啥功能
 🪄🪄🪄🪄🪄🪄🪄🪄
 🚀启动
 你是我的英语老师，我需要你陪我练习英语，准备托福考试。
@@ -175,8 +177,7 @@ const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
 
     function parseSettingsText(settingsText) {
         menus.length = 0; // Clear the existing array
-        const settingLines = settingsText.split("\n").slice(1); // The first line is setting name. Buttons start from the second line
-        const buttonData = settingLines.join("\n").split("🪄🪄🪄🪄🪄🪄🪄🪄");
+        const buttonData = settingsText.split("🪄🪄🪄🪄🪄🪄🪄🪄").slice(1);
         buttonData.forEach(data => {
             const lines = data.trim().split("\n");
             if (lines.length >= 2) {
