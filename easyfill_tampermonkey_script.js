@@ -245,7 +245,7 @@ async function sendToGPT(template, selectedText, sendDirectly = false) {
         cursorPosition = inputElement.value.length; // 光标放在文本末尾
     }
 
-    if (sendDirectly && selectedText.length > 0) {
+    if (sendDirectly && (selectedText.length > 0 || placeholderPosition === -1) ) {
         const inputEvent = new Event('input', { 'bubbles': true });
         inputElement.dispatchEvent(inputEvent);
         await new Promise(resolve => setTimeout(resolve, 50));
