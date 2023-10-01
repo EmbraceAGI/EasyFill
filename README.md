@@ -33,9 +33,10 @@
 
 
 ## 联系作者
-作者有个公众号：南瓜博士，欢迎关注。
+本插件特别感谢豆爸开发的 [关联学习工具](https://waytoagi.feishu.cn/wiki/XMgawFyCVimUSTkeJvHckF9inLc) 给到的启发。  
+我最初做的版本，是把按钮放在页面下方一长排，改成菜单交互的代码是由豆爸贡献的。菜单和对话框的样式也是豆爸做的。
+
+我有个公众号：南瓜博士，欢迎关注。
 
 ![南瓜博士](imgs/qrcode.jpeg)  
 
-本插件特别感谢豆爸开发的 [关联学习工具](https://waytoagi.feishu.cn/wiki/XMgawFyCVimUSTkeJvHckF9inLc) 给到的启发。  
-原本是在页面最下方的一排按钮，改成菜单交互的代码也是由豆爸贡献的。

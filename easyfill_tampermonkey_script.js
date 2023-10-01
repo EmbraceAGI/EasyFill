@@ -177,16 +177,41 @@ const style = `
         color: #000;
         border-radius: 0.55em;
         border: 0px;
-        padding: 18px 18px;
+        padding: 5px;
         box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.1) 0px 2px 5px, rgba(0, 0, 0, 0.05) 0px 3px 3px;
     }
     
-    #menuContainer button {
-        margin-bottom: 5px;
-    }
-
     #menuContainer button:disabled {
-        color: #c0c0c0;   
+        height: 1px;
+        color: #c6c6c600;
+        padding: 0px;
+        border-bottom: 1px solid #dddddd8c;
+    }
+    
+    #menuContainer button:disabled:hover {
+        height: 1px;
+        color: #c6c6c600;
+        padding: 0px;
+        border-bottom: 1px solid #dddddd8c;
+    }
+    
+    
+    #menuContainer button {
+        margin-bottom: 1px;
+    }
+    
+    #menuContainer button:hover {
+     background-color: #f1f1f1;
+     border-radius: 5px;
+     padding: 5px 10px;
+     width: 100%;
+    }
+    
+    #menuContainer button {
+     border-radius: 5px;
+     padding: 5px 10px;
+     width: 100%;
+        text-align: left; 
     }
 `;
 
