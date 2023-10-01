@@ -21,7 +21,7 @@
 欢迎大家补充新的功能组到 tool_templates 下。  
 如果你想添加新的功能，只需要把功能组模版粘贴到设置页面里。    
 
-![设置页面](imgs/edit_settings.png)
+![设置页面](imgs/edit_settings.jpg)
 
 ### 文件格式说明：
 
