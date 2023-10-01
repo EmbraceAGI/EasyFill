@@ -245,7 +245,7 @@ async function sendToGPT(template, selectedText, sendDirectly = false) {
         cursorPosition = inputElement.value.length; // 光标放在文本末尾
     }
 
-    if (sendDirectly && selectedText) {
+    if (sendDirectly && selectedText.length > 0) {
         const inputEvent = new Event('input', { 'bubbles': true });
         inputElement.dispatchEvent(inputEvent);
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -457,7 +457,7 @@ function updateMenuItems() {
     menuContainer.innerHTML = '';
     menus.forEach(menu => {
         menuContainer.appendChild(createMenuItem(menu[0], async function() {
-            await sendToGPT(menu[1], window.getSelection().toString(), menu[2]);
+            await sendToGPT(menu[1], window.getSelection().toString().trim(), menu[2]);
         }));
     });
 
