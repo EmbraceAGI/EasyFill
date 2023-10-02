@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EasyFill
 // @namespace    http://easyfill.tool.elfe/
-// @version      0.3
+// @version      0.4
 // @description  超级方便的 GPT 对话助手，通过划选或点击，把内容填充到预置 prompt 模版直接发送。支持多个功能组设置。
 // @author       Elfe & ttmouse & GPT
 // @match        https://chat.openai.com/*
@@ -9,7 +9,7 @@
 // @grant        none
 // ==/UserScript==
 
-// Copyright (c) 2023 ElfeXu(Xu Yanfei)
+// Copyright (c) 2023 ElfeXu (Xu Yanfei)
 // Licensed under the MIT License.
 
 const setting_usage_text = `使用说明
@@ -25,12 +25,12 @@ const setting_usage_text = `使用说明
 CLICK 示范
 通过要求 GPT 以特定格式生成内容，可以将内容转化成链接，点击即直接发送。例如
 请给我五个和有水关的英文单词，用两个方括号 [[]] 来标记。
-再用列表的方式给出三个和水有关的节日，标题为节日名称后面带一行注释
+再用列表的方式给出三个和水有关的节日，节日名称写在 💦  💦 之间
 📖📖📖📖📖📖📖📖
 \\[\\[(.*?)\\]\\]
 请帮我解释一下{__PLACE_HOLDER__}这个词的意思
 📖📖📖📖📖📖📖📖
-<strong>(.*?)<\/strong>
+💦(.*?)💦
 请帮我详细介绍一下{__PLACE_HOLDER__}。
 `
 
@@ -52,7 +52,7 @@ prompt多长都没关系
 第一行是正则匹配，后面是模版。匹配到的内容会替代掉{__PLACE_HOLDER__}中的内容然后被直接发送。
 📖📖📖📖📖📖📖📖
 <strong>(.*?)<\/strong>
-同样可以有多个直接点击项。让 GPT 输出不同格式的内容，定义成不同的后续行动。
+可以设置多个直接点击项，每一项用不同的正则匹配即可。让 GPT 输出不同格式的内容，定义成不同的后续行动。
 {__PLACE_HOLDER__}
 `;
 
