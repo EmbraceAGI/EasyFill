@@ -57,7 +57,7 @@
 
 如果电脑上的 Chrome 安装后仍旧看不到效果：  
 1. 确认脚本已启用：在 https://chat.openai.com/ 的网页上你应该能看到这个脚本可用，确保它是开启的。  
-![T1](troubleshooting1.png)
+![T1](imgs/troubleshooting1.png)
 
 2. 强制刷新页面（Ctrl/Cmd + Shift + R）
 
@@ -65,7 +65,7 @@
 
 4. 如果还是不行，请从浏览器右上角菜单-》更多工具-》开发者工具-》console 里找一下有什么出错信息。也许和别的插件或脚本冲突了。  
 
-![T2](troubleshooting2.png)
+![T2](imgs/troubleshooting2.png)
 
 后续考虑改造成浏览器插件。现阶段还是以满足自己及朋友的功能需要为主。如有从实际使用场景出发的功能，欢迎提出来。  
 
