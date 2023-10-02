@@ -258,6 +258,45 @@ const style = `
       #menuContainer button:nth-child(2) {
         text-align: center;
       }
+
+    /* 使链接看起来更像链接 */
+    .custom-link {
+        text-decoration: underline;
+        cursor: pointer;  /* 当鼠标放上去时变成手的样子 */
+        position: relative;  /* 为了定位 tooltip */
+    }
+
+    /* 提示（tooltip）样式 */
+    .custom-link:hover::after {
+        content: attr(data-text);  /* 显示 data-text 的内容 */
+        position: absolute;
+        bottom: 100%;  /* 出现在链接的上方 */
+        left: 0;  /* 与链接的左边界对齐 */
+        width: max-content;  /* 根据内容设置宽度 */
+        max-width: 300px;  /* 设置最大宽度 */
+        white-space: normal;  /* 允许文本换行 */
+        line-height: 18px; 
+        max-height: 120px;
+        overflow: hidden;
+        background-color: #333;  /* 背景色 */
+        color: white;  /* 文字颜色 */
+        padding: 5px 10px;  /* 内边距 */
+        border-radius: 4px;  /* 边框圆角 */
+        font-size: 12px;  /* 文字大小 */
+        z-index: 10;  /* 保证 tooltip 出现在其他元素的上方 */
+    }
+
+    /* 添加一个小三角形在 tooltip 的下方 */
+    .custom-link:hover::before {
+        content: '';
+        position: absolute;
+        bottom: -5px;  /* 出现在 tooltip 的正下方 */
+        left: calc(50% + 5px);  /* 让小三角形出现在链接的中央 */
+        width: 10px;  /* 宽度 */
+        height: 10px;  /* 高度 */
+        background-color: #333;  /* 与 tooltip 的背景色相同 */
+        z-index: 9;  /* 出现在 tooltip 下方 */
+    }
 `;
 
 const iconSetting = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAANhJREFUOE+lk2sSgzAIhFkvVr2B8ULaCxlvoL1Y6JARB/Nqp/VfJCwfCwE1vnEcewlv23bUrqEWkGQAu8SZeaiJ3AScczuAVwjhADATUSQA8FzXdZmmaWHm2QpeApKsCa22NKYil4BFTrHPyo+UKNLZas45lrP3vuiNUmYt2Arab6kNpZQ74pMYixZ6SUQptc3/BURJKLqu69MRpQQ6xlsLiYlxlJ9MtPHqGK2Zp0/ZYt3GqHiNJZL3EDeTiA7v/ZDtgYjIT7u2dpWVRJMzAVv9p8eU4n/znN/5jr5xu8638gAAAABJRU5ErkJggg==';
@@ -374,7 +413,7 @@ let shouldContinue = true;
 
 // 点击事件处理器
 async function clickHandler(event) {
-    event.preventDefault();
+    //event.preventDefault();
     console.log('执行 clickHandler'); // 执行点击事件处理器
     const inputElement = document.getElementById('prompt-textarea'); // 获取输入框
     console.log('[Debug] 获取输入框元素');
@@ -398,6 +437,7 @@ async function clickHandler(event) {
 
 }
 
+
 function replace_text(original) {
     clicks.forEach(([regExpression, template]) => {
         original = original.replace(regExpression, (match, p1) => {
@@ -411,9 +451,7 @@ function replace_text(original) {
 
 // 处理元素
 function processElement(element) {
-    //console.log('[Debug] 尝试处理元素');
     if (isUpdating) {
-        console.log('正在更新，跳过');
         return;
     }
 
@@ -423,21 +461,17 @@ function processElement(element) {
     const bracketRegex = /\[\[(.*?)\]\]/g;
     innerHTML = replace_text(innerHTML);
 
-    // // 处理 <strong>标签
-    // const strongRegex = /<strong>(.*?)<\/strong>/g;
-    // innerHTML = innerHTML.replace(strongRegex, function(match, capture) {
-    //     return `<a class="custom-link strong-link" data-text="${capture}">${capture}</a>`;
-    // });
-
-    element.innerHTML = innerHTML;
-    //   console.log('[Debug] 替换 HTML 内容完成');
+    // 替换了 innerHTML 后，原本网页中 Copy code 之类的事件监听就失效了。
+    // 为了尽可能让两个功能共存，这里仅对文字有改动的重新赋值。
+    if (innerHTML != element.innerHTML) {
+        element.innerHTML = innerHTML;
+    }
 
     // 给新生成的链接添加事件监听
     const customLinks = element.querySelectorAll('.custom-link');
     customLinks.forEach(link => {
         link.addEventListener('click', clickHandler);
     });
-    //   console.log('[Debug] 添加点击事件完成');
 }
 
 // 这个部分是用来检测GPT是否在更新的
