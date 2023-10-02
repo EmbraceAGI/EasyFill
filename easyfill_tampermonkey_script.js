@@ -10,36 +10,42 @@
 // ==/UserScript==
 
 const setting_usage_text = `使用说明
+通过 🪄 分隔按钮 
 🪄🪄🪄🪄🪄🪄🪄🪄
-填充
-每个按钮对应一个预设好的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
-如果没有选中，且不是直接发送的按钮，你的光标会停留在 __PLACE_HOLDER__ 处让你补充。
+功能一
+这里是预设的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 直接发送
-带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
+功能二
+点击菜单文字可以直接发送，点击右边会把 prompt 填充到输入框，可以编辑后再发送。
+`
 
 const setting_new_setting_text = `新功能组名称
-下面的 🪄 用于区分功能按钮
+这里可以填写功能组使用说明
+通过 🪄 分隔按钮
 🪄🪄🪄🪄🪄🪄🪄🪄
 第一行是按钮名称
 第二行开始是prompt。{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀 直接发送的按钮
-带有🚀符号的按钮，点击后会替换 {__PLACE_HOLDER__} 内容并直接发送。`;
+第二个功能
+第二个prompt
+prompt多长都没关系
+各种奇怪字符也都可以用
+只根据连续八个🪄来分隔功能
+`;
 
 
 const default_setting_texts = [
     `英语练习
 先点启动，再贴大段文章，然后需要干啥就选中了文字点啥功能
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀启动
+启动
 你是我的英语老师，我需要你陪我练习英语，准备托福考试。
 请**用英语和我对话**，涉及英语例句、题目和话题探讨时请用托福水平的书面英语，但在我明确提出需要时切换到中文。
 为了让我的学习更愉悦，请用轻松的语气，并添加一些 emoji。
 接下来我会给你一篇英文文章，请记住文章，然后我会向你请求帮助。
 如果你理解了，请说 Let's begin！
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀英译中
+英译中
 请帮我把下面这段话翻译直译成中文，不要遗漏任何信息。
 然后请判断文字是否符合中文表达习惯，如果不太符合，请重新意译，在遵循愿意的前提下让内容更通俗易懂。
 输出格式应该是
@@ -62,7 +68,7 @@ const default_setting_texts = [
 {__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀学单词
+学单词
 '''
 {__PLACE_HOLDER__}
 '''
@@ -73,7 +79,7 @@ const default_setting_texts = [
 3. 请给出更多例句
 4. 如果有容易混淆的单词，请给出对比
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀深入解释
+深入解释
 我不太理解这段文字的具体含义，能否结合上下文，给我一个更深入的中文解释？
 解释时请着重讲解其中有难度的字词句。
 如果有可能，请为我提供背景知识以及你的观点。
@@ -81,14 +87,14 @@ const default_setting_texts = [
 {__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀封闭题
+封闭题
 请对下面这段文字，按照托福阅读理解的难度，用英文为我出三道有标准答案的问答题。
 请等待我回答后，再告诉我标准答案，并加以解释。
 '''
 {__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
-🚀开放题
+开放题
 请对下面这段文字，按照托福口语和作文的难度，用英文为我出一道开放题，我们来进行探讨。
 '''
 {__PLACE_HOLDER__}
@@ -179,43 +185,60 @@ const style = `
         border: 0px;
         padding: 5px;
         box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.1) 0px 2px 5px, rgba(0, 0, 0, 0.05) 0px 3px 3px;
+        border-bottom: 1px solid #f0f0f0; /* 浅灰色的线条 */
+        padding: 5px 0;
     }
     
-    #menuContainer button:disabled {
+    #menuContainer div {
+        display: flex;
+        align-items: center;
+        width: auto;
+        border-bottom: 1px solid #f0f0f0; /* 浅灰色的线条 */
+        padding: 5px 0;
+        margin: 0 5px;
+      }
+      
+      #menuContainer button {
+        border: none;
+        background: none;
+        text-align: left;
+        padding: 5px 10px;
+        margin: 0;
+        width: auto;
+        white-space: nowrap; /* 防止换行 */
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+      }
+      
+      #menuContainer button:hover {
+        background-color: #f1f1f1;
+      }
+      
+      #menuContainer button:disabled {
         height: 1px;
         color: #c6c6c600;
-        padding: 0px;
+        padding: 0;
         border-bottom: 1px solid #dddddd8c;
-    }
-    
-    #menuContainer button:disabled:hover {
-        height: 1px;
-        color: #c6c6c600;
-        padding: 0px;
-        border-bottom: 1px solid #dddddd8c;
-    }
-    
-    
-    #menuContainer button {
-        margin-bottom: 1px;
-    }
-    
-    #menuContainer button:hover {
-     background-color: #f1f1f1;
-     border-radius: 5px;
-     padding: 5px 10px;
-     width: 100%;
-    }
-    
-    #menuContainer button {
-     border-radius: 5px;
-     padding: 5px 10px;
-     width: 100%;
-        text-align: left; 
-    }
+      }
+      
+      #menuContainer button:disabled:hover {
+        background: none;
+      }
+      
+      #menuContainer button img {
+        height: 20px;  // 可以根据需要调整
+        width: 20px;   // 可以根据需要调整
+        margin-right: 10px;
+      }
+      
+      #menuContainer button:nth-child(2) {
+        text-align: center;
+      }
 `;
 
-
+const iconSetting = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAANhJREFUOE+lk2sSgzAIhFkvVr2B8ULaCxlvoL1Y6JARB/Nqp/VfJCwfCwE1vnEcewlv23bUrqEWkGQAu8SZeaiJ3AScczuAVwjhADATUSQA8FzXdZmmaWHm2QpeApKsCa22NKYil4BFTrHPyo+UKNLZas45lrP3vuiNUmYt2Arab6kNpZQ74pMYixZ6SUQptc3/BURJKLqu69MRpQQ6xlsLiYlxlJ9MtPHqGK2Zp0/ZYt3GqHiNJZL3EDeTiA7v/ZDtgYjIT7u2dpWVRJMzAVv9p8eU4n/znN/5jr5xu8638gAAAABJRU5ErkJggg==';
+const iconEdit = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAZJJREFUWEfFV9ttwzAMlCZrsoHlhZosZHmDOouZAY0SoGXJPMopmq98CLyHjhQdwz//4hX8cRwf0zQ9rtToJsDgRPTN4DHGZy+RbgIpJdLKmcS6rss8z4vHkS4Cop5BGUyc6HGji4CoJ6K7KNZX4iHiJqDV1+7dS8RFAA0eem5zyhOYMngtqzWBnPMpBkygLHpmtRBF2hMmUCvKJHQXMCARfYUQbgg4fAXe4HFhy3q5etOBYRhYzQ9SNKXE52D1kAOWelHiCd5ugp51gaeoJ3gwAbQo6lJNbDMDSv2Sc76fOYUSdRFAi15R3wwhWtSTkZaDhyvwFO1pu5JIk4A1yTxEz/KzI1DM9yXG+GqtWmhGrMduR0AsLVetkgSaEQv8EEI1djf1rVWrthEhYGYbagLS++WzG0LgpdM17+EM8EFRp1+z8tlFHibUkUMXSA5k4WRXfjcf/gaQ/93fAWYbqiDKfr+Bqp85mlH11Umo338NSkTP8qOj1jUIuF7nD1egg1gD1QB/QgBR8Mkz5kr2SbBarTe3GoEwVJGU+QAAAABJRU5ErkJggg==';
+const iconSend = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAWNJREFUWEftVkESwiAMJH1Z/UHph9QPlf7A+rHGCSMOYoIJtXqRY4eym012AdyPF/wY3/0JfE2BYRh6ADgCwHWaplNq/e4EErBzridQRDzM87zsTqAEToAhhKeiP66ABLw7gXfAdwJLCOGQW3+zAkrgiAkA53wA47fWILIAPwbuEwRagBOB0gEmBQzAZLFouXKVDlARMABHjwPARWjrywBWCViAnXMLIp4p6aTquQFkCRiB6YxY2TiOJ0QkAuxSEbiDSxK+HJwOfQfORXA1ijUHWsAJjBvA6gzUSORyeu9RkSXsAKpcUBLJvey9p3axlnuKWyaAqi3gKiIi67ou6SrVtKmWgGYCOSkLeG0AVS2Q1KhZTpOAmxWgW02rhOSAZgVo8g02FB2wiUD8OZtuSQ0pATe1IHm/lJaStOu6Pp+P3Qhwd3uqKlejtq+5BVRp/rSWkpCIlE+wcm/zk0wRv6otfwI3KLv7Id7vNIsAAAAASUVORK5CYII=';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = style;
 document.head.appendChild(styleElement);
@@ -225,27 +248,13 @@ let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || defa
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
 
-async function sendToGPT(template, selectedText, sendDirectly = false) {
+async function sendToGPT(template, selectedText, sendDirectly) {
     let placeholderPosition = template.indexOf('{__PLACE_HOLDER__}');
     let finalText = template.replace('{__PLACE_HOLDER__}', selectedText);
-//    event.preventDefault();
     const inputElement = document.getElementById('prompt-textarea');
     inputElement.value = finalText;
 
-    // 设置光标位置
-    let cursorPosition;
-    if (placeholderPosition !== -1) {
-        // 将光标放在替换文本的结束位置
-        if (selectedText) {
-            cursorPosition = placeholderPosition + selectedText.length;
-        } else {
-            cursorPosition = placeholderPosition;
-        }
-    } else {
-        cursorPosition = inputElement.value.length; // 光标放在文本末尾
-    }
-
-    if (sendDirectly && (selectedText.length > 0 || placeholderPosition === -1) ) {
+    if (sendDirectly) {
         const inputEvent = new Event('input', { 'bubbles': true });
         inputElement.dispatchEvent(inputEvent);
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -253,28 +262,74 @@ async function sendToGPT(template, selectedText, sendDirectly = false) {
         if (sendButton) {
             sendButton.click();
         }
+        inputElement.focus();
+    } else {
+        inputElement.focus();
+        // 设置光标位置
+        let cursorPosition;
+        if (placeholderPosition !== -1) {
+            // 将光标放在替换文本的结束位置
+            if (selectedText) {
+                cursorPosition = placeholderPosition + selectedText.length;
+            } else {
+                cursorPosition = placeholderPosition;
+            }
+        } else {
+            cursorPosition = inputElement.value.length; // 光标放在文本末尾
+        }
+        inputElement.setSelectionRange(cursorPosition, cursorPosition);
     }
 
-    inputElement.focus();
-    inputElement.setSelectionRange(cursorPosition, cursorPosition);
+    
 }
 
 // 创建单个菜单项
-function createMenuItem(label, action) {
-  const menuItem = document.createElement('button');
-  menuItem.style.display = 'block';
-  menuItem.innerHTML = label;
-  if (action == null) {
-    menuItem.disabled = true;
-  } else {
-    menuItem.onclick = () => {
-        action();
-        contextMenu.style.display = 'none';
-    };
-  }
+function createMenuItem(label, icon1, icon2, action1, action2) {
+    const menuItem = document.createElement('div');
+    menuItem.style.display = 'flex';
+    menuItem.style.alignItems = 'center';
   
-  return menuItem;
-}
+    const leftPart = document.createElement('button');
+    leftPart.style.flex = '0.8';
+    leftPart.style.display = 'flex';
+    leftPart.style.alignItems = 'center';
+  
+    const textLabel = document.createElement('span');
+    textLabel.innerHTML = '  ' + label + '  ';
+    leftPart.appendChild(textLabel);
+  
+    if (action1 == null) {
+        leftPart.disabled = true;
+    } else {
+        leftPart.onclick = () => {
+        action1();
+        contextMenu.style.display = 'none';
+      };
+    }
+    menuItem.appendChild(leftPart);
+  
+    const rightPart = document.createElement('button');
+    if (icon2 !== null) {
+        rightPart.style.flex = '0.2';
+        rightPart.style.display = 'flex';
+        rightPart.style.alignItems = 'center';
+        
+        const rightIcon = document.createElement('img');
+        rightIcon.src = icon2;
+        rightPart.appendChild(rightIcon);
+    }
+    if (action2 == null) {
+        rightPart.disabled = true;
+    } else {
+        rightPart.onclick = () => {
+            action2();
+            contextMenu.style.display = 'none';
+       };
+    }
+    menuItem.appendChild(rightPart);
+    
+    return menuItem;
+  }
 
 // 创建上下文菜单
 const contextMenu = document.createElement('div');
@@ -444,9 +499,8 @@ function parseSettingsText(settingsText) {
         const lines = data.trim().split("\n");
         if (lines.length >= 2) {
             const name = lines[0];
-            const dispatchFlag = name.includes("🚀");
             const content = lines.slice(1).join("\n");
-            menus.push([name, content, dispatchFlag]);
+            menus.push([name, content]);
         }
     });
 }
@@ -456,17 +510,19 @@ function updateMenuItems() {
 
     menuContainer.innerHTML = '';
     menus.forEach(menu => {
-        menuContainer.appendChild(createMenuItem(menu[0], async function() {
-            await sendToGPT(menu[1], window.getSelection().toString().trim(), menu[2]);
-        }));
+        menuContainer.appendChild(
+            createMenuItem(menu[0], 
+                iconSend,
+                iconEdit,
+                async function() {
+                    await sendToGPT(menu[1], window.getSelection().toString().trim(), true);
+                },
+                async function() {
+                    await sendToGPT(menu[1], window.getSelection().toString().trim(), false);
+                },
+        ));
     });
-
-    menuContainer.appendChild(createMenuItem('------', null));
-
-    menuContainer.appendChild(createMenuItem('设置', function() {
-        showSettingsModal();
-    }));
-
+    menuContainer.appendChild(createMenuItem('设置', iconSetting, null, function() {showSettingsModal();}, null));
 }
 
 
