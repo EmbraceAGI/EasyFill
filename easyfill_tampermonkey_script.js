@@ -2,7 +2,7 @@
 // @name         EasyFill
 // @namespace    http://easyfill.tool.elfe/
 // @version      0.3
-// @description  Add a menu for easy filling in OpenAI chat window
+// @description  超级方便的 GPT 对话助手，通过划选或点击，把内容填充到预置 prompt 模版直接发送。支持多个功能组设置。
 // @author       Elfe & ttmouse & GPT
 // @match        https://chat.openai.com/*
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAAAAABWESUoAAABX2lDQ1BJQ0MgUHJvZmlsZQAAeJxtkLFLAmEYxh/NEI6LFCIaghyiycLOgla1qMDh0ARrO8/rDPT8uLuQtoJaQ6ihtrClsakWh9amgqAhotr6AyIXk+v9vEqtvo+X58fD+768PIBXVBgr+gCUDNtMLcZD2dW1kP8VArwYQBCColosJstJasG39r7GPTxc7yb5ruB+9rop1dM7lef4WOD86G9/zxPymqWSflBJKjNtwBMhlis247xNPGTSUcSHnHWXzzjnXK63e1ZSCeJb4oBaUPLEL8ThXJevd3GpuKl+3cCvFzUjkyYdphrFPBaQpB9CBhJmMU21RBn9PzPTnkmgDIYtmNiAjgJsmo6Rw1CERrwMAyqmECaWEKGK8qx/Z9jxyjVg7h3oq3a83DFwuQeMPHS88RNgcBe4uGGKqfwk62n4rPWo5LIYB/qfHOdtAvAfAK2q4zRrjtM6pf2PwJXxCXhkY9XHGXyzAAAAVmVYSWZNTQAqAAAACAABh2kABAAAAAEAAAAaAAAAAAADkoYABwAAABIAAABEoAIABAAAAAEAAAEgoAMABAAAAAEAAAEgAAAAAEFTQ0lJAAAAU2NyZWVuc2hvdPDFp1oAAABUSURBVHic3VFBDgAgCMLW/79M1wiX1TFuAhOcwK/gPLTKnRhYGFRH38u2gQAQMxOmK6MjTU4LUHpkJWWLlAw/oi65RhQlPeHpWduMO/sZ1l84+QUG1/URFizO5xoAAAAASUVORK5CYII=
@@ -14,12 +14,24 @@
 
 const setting_usage_text = `使用说明
 通过 🪄 分隔按钮 
+📖 之后的是直接在原文替代成链接的内容
 🪄🪄🪄🪄🪄🪄🪄🪄
 功能一
 这里是预设的 prompt  ，{__PLACE_HOLDER__} 里的内容会被你鼠标选中的文字替代掉。
 🪄🪄🪄🪄🪄🪄🪄🪄
 功能二
 点击菜单文字可以直接发送，点击右边会把 prompt 填充到输入框，可以编辑后再发送。
+🪄🪄🪄🪄🪄🪄🪄🪄
+CLICK 示范
+通过要求 GPT 以特定格式生成内容，可以将内容转化成链接，点击即直接发送。例如
+请给我五个和有水关的英文单词，用两个方括号 [[]] 来标记。
+再用列表的方式给出三个和水有关的节日，标题为节日名称后面带一行注释
+📖📖📖📖📖📖📖📖
+\\[\\[(.*?)\\]\\]
+请帮我解释一下{__PLACE_HOLDER__}这个词的意思
+📖📖📖📖📖📖📖📖
+<strong>(.*?)<\/strong>
+请帮我详细介绍一下{__PLACE_HOLDER__}。
 `
 
 const setting_new_setting_text = `新功能组名称
@@ -34,6 +46,14 @@ const setting_new_setting_text = `新功能组名称
 prompt多长都没关系
 各种奇怪字符也都可以用
 只根据连续八个🪄来分隔功能
+📖📖📖📖📖📖📖📖
+\\[\\[(.*?)\\]\\]
+在按钮之后可以用八个📖分隔，带上点击直接发送的内容。
+第一行是正则匹配，后面是模版。匹配到的内容会替代掉{__PLACE_HOLDER__}中的内容然后被直接发送。
+📖📖📖📖📖📖📖📖
+<strong>(.*?)<\/strong>
+同样可以有多个直接点击项。让 GPT 输出不同格式的内容，定义成不同的后续行动。
+{__PLACE_HOLDER__}
 `;
 
 
@@ -110,8 +130,6 @@ setting_usage_text
 const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
 const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
 
-
-
 ////////////////////////// CSS //////////////////////////
 const style = `
     .settings-modal {
@@ -175,6 +193,11 @@ const style = `
         background-color: #B4B4B3;  /* 灰色背景 */
         color: #808080;            /* 深灰色文字 */
         cursor: not-allowed;       /* 禁用的光标样式 */
+    }
+
+    #contextMenu {
+        display: none;
+        position: absolute;
     }
 
     #menuContainer {
@@ -246,7 +269,6 @@ document.head.appendChild(styleElement);
 
 
 ////////////////////////// Easy Fill functions //////////////////////////
-
 let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
@@ -332,10 +354,7 @@ function createMenuItem(label, icon1, icon2, action1, action2) {
     menuItem.appendChild(rightPart);
     
     return menuItem;
-  }
-
-// 创建上下文菜单
-const contextMenu = document.createElement('div');
+}
 
 function hideContextMenu() {
     contextMenu.style.display = 'none';
@@ -345,18 +364,6 @@ function showContextMenu(event) {
     contextMenu.style.top = `${event.clientY}px`;
     contextMenu.style.display = 'block';
 }
-
-function initContextMenu() {
-    contextMenu.style.display = 'none';
-    contextMenu.style.position = 'absolute';
-
-    const menuContainer = document.createElement('div');
-    menuContainer.id = 'menuContainer';
-
-    contextMenu.appendChild(menuContainer);
-    document.body.appendChild(contextMenu);
-}
-
 
 ////////////////////////// Easy Click functions //////////////////////////
 
@@ -391,6 +398,17 @@ async function clickHandler(event) {
 
 }
 
+function replace_text(original) {
+    clicks.forEach(([regExpression, template]) => {
+        original = original.replace(regExpression, (match, p1) => {
+            // 使用模板替换找到的匹配项
+            let replaced = template.replace('{__PLACE_HOLDER__}', p1);
+            return `<a class="custom-link" data-text="${replaced}">${p1}</a>`;
+        });
+    });
+    return original;
+}
+
 // 处理元素
 function processElement(element) {
     //console.log('[Debug] 尝试处理元素');
@@ -403,9 +421,7 @@ function processElement(element) {
 
     // 处理[[ ]] 符号
     const bracketRegex = /\[\[(.*?)\]\]/g;
-    innerHTML = innerHTML.replace(bracketRegex, function(match, capture) {
-        return `<a class="custom-link" data-text="${capture}">${capture}</a>`;
-    });
+    innerHTML = replace_text(innerHTML);
 
     // // 处理 <strong>标签
     // const strongRegex = /<strong>(.*?)<\/strong>/g;
@@ -598,8 +614,9 @@ function showSettingsModal() {
 }
 
 let menus = [];
-function parseSettingsText(settingsText) {
-    menus.length = 0; // Clear the existing array
+let clicks = []
+
+function parseMenus(settingsText) {
     const buttonData = settingsText.split("🪄🪄🪄🪄🪄🪄🪄🪄").slice(1);
     buttonData.forEach(data => {
         const lines = data.trim().split("\n");
@@ -609,6 +626,38 @@ function parseSettingsText(settingsText) {
             menus.push([name, content]);
         }
     });
+}
+
+function parseClicks(settingText) {
+    // 根据 📖📖📖📖📖📖📖📖 分割设置文件，并移除首尾的空值
+    const configArray = settingText.split('📖📖📖📖📖📖📖📖').filter(Boolean);
+
+    // 遍历每个设置
+    configArray.forEach(config => {
+        // 按行分割配置
+        const lines = config.trim().split('\n');
+        // 第一行是政策表达式
+        const regExpression = new RegExp(lines[0], 'g');
+        // 后续行组成替换模板
+        const template = lines.slice(1).join('\n');
+
+        // 将政策表达式和模板添加到政策数组中
+        clicks.push([regExpression, template]);
+    });
+}
+
+
+function parseSettingsText(settingsText) {
+    menus.length = 0; // Clear the existing array
+    clicks.length = 0; // Clear the existing array
+
+    let splitted = settingsText.split("📖📖📖📖📖📖📖📖")
+    if (splitted.length < 2) {
+        parseMenus(settingsText);
+    } else {
+        parseMenus(splitted[0]);
+        parseClicks(splitted.slice(1).join("📖📖📖📖📖📖📖📖"));
+    }
 }
 
 function updateMenuItems() {
@@ -635,7 +684,14 @@ function updateMenuItems() {
 
 ////////////////////////// Main //////////////////////////
 
-initContextMenu();
+// 创建上下文菜单
+const contextMenu = document.createElement('div');
+const menuContainer = document.createElement('div');
+contextMenu.id = 'contextMenu'; 
+menuContainer.id = 'menuContainer';
+contextMenu.appendChild(menuContainer);
+document.body.appendChild(contextMenu);
+
 updateMenuItems();
 
 document.addEventListener('mouseup', function(event) {
