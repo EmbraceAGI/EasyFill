@@ -3,7 +3,7 @@
 
 ![logo](imgs/logo.jpg)
 
-将 [Easi Fill 油猴脚本](./easyfill_tampermonkey_script.js) 添加到 Tampermonkey 插件后，在 chat.openai.com 页面开启并使用。
+将 [Easy Fill 油猴脚本](./easyfill_tampermonkey_script.js) 添加到 Tampermonkey 插件后，在 chat.openai.com 页面开启并使用。
 （目前只测试过电脑上 Chrome 浏览器的油猴插件，别的环境还没有测试过。后续考虑改造成浏览器插件。）  
 
 鼠标选中文字，或者双击左键，鼠标位置会出现菜单栏。

@@ -107,14 +107,12 @@ const default_setting_texts = [
 setting_usage_text
 ];
 
-
-
-
-
-
 const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
 const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
 
+
+
+////////////////////////// CSS //////////////////////////
 const style = `
     .settings-modal {
         position: fixed;
@@ -247,6 +245,8 @@ styleElement.innerHTML = style;
 document.head.appendChild(styleElement);
 
 
+////////////////////////// Easy Fill functions //////////////////////////
+
 let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
@@ -336,14 +336,6 @@ function createMenuItem(label, icon1, icon2, action1, action2) {
 
 // 创建上下文菜单
 const contextMenu = document.createElement('div');
-contextMenu.style.display = 'none';
-contextMenu.style.position = 'absolute';
-
-const menuContainer = document.createElement('div');
-menuContainer.id = 'menuContainer';
-
-contextMenu.appendChild(menuContainer);
-document.body.appendChild(contextMenu);
 
 function hideContextMenu() {
     contextMenu.style.display = 'none';
@@ -354,18 +346,129 @@ function showContextMenu(event) {
     contextMenu.style.display = 'block';
 }
 
-document.addEventListener('mouseup', function(event) {
-    const selectedText = window.getSelection().toString();
-    if (selectedText.length == 0) {
-        hideContextMenu();
-    } else {
-        showContextMenu(event);
-    }
-});
+function initContextMenu() {
+    contextMenu.style.display = 'none';
+    contextMenu.style.position = 'absolute';
 
-document.addEventListener('dblclick', function(event) {
-    showContextMenu(event);
-});
+    const menuContainer = document.createElement('div');
+    menuContainer.id = 'menuContainer';
+
+    contextMenu.appendChild(menuContainer);
+    document.body.appendChild(contextMenu);
+}
+
+
+////////////////////////// Easy Click functions //////////////////////////
+
+let isUpdating = false;
+let rerunTimeout;
+let intervalID;
+let shouldContinue = true;
+
+// 点击事件处理器
+async function clickHandler(event) {
+    event.preventDefault();
+    console.log('执行 clickHandler'); // 执行点击事件处理器
+    const inputElement = document.getElementById('prompt-textarea'); // 获取输入框
+    console.log('[Debug] 获取输入框元素');
+    inputElement.value = this.getAttribute("data-text"); // 将链接文本添加到输入框
+    console.log('[Debug] 设置输入框值');
+    const inputEvent = new Event('input', { 'bubbles': true }); // 创建input事件
+    console.log('[Debug] 创建 input 事件');
+    inputElement.dispatchEvent(inputEvent); // 触发input事件
+    console.log('[Debug] 触发 input 事件');
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    console.log('[Debug] 50ms 延时完成');
+
+    const sendButton = document.querySelector('[data-testid="send-button"]');
+    console.log('[Debug] 获取发送按钮');
+    if (sendButton) {
+        console.log('点击发送按钮');
+        sendButton.click();
+        console.log('[Debug] 开启监听');
+    }
+
+}
+
+// 处理元素
+function processElement(element) {
+    //console.log('[Debug] 尝试处理元素');
+    if (isUpdating) {
+        console.log('正在更新，跳过');
+        return;
+    }
+
+    let innerHTML = element.innerHTML;
+
+    // 处理[[ ]] 符号
+    const bracketRegex = /\[\[(.*?)\]\]/g;
+    innerHTML = innerHTML.replace(bracketRegex, function(match, capture) {
+        return `<a class="custom-link" data-text="${capture}">${capture}</a>`;
+    });
+
+    // // 处理 <strong>标签
+    // const strongRegex = /<strong>(.*?)<\/strong>/g;
+    // innerHTML = innerHTML.replace(strongRegex, function(match, capture) {
+    //     return `<a class="custom-link strong-link" data-text="${capture}">${capture}</a>`;
+    // });
+
+    element.innerHTML = innerHTML;
+    //   console.log('[Debug] 替换 HTML 内容完成');
+
+    // 给新生成的链接添加事件监听
+    const customLinks = element.querySelectorAll('.custom-link');
+    customLinks.forEach(link => {
+        link.addEventListener('click', clickHandler);
+    });
+    //   console.log('[Debug] 添加点击事件完成');
+}
+
+// 这个部分是用来检测GPT是否在更新的
+function checkUpdateStatus() {
+    if (!shouldContinue) return;
+    console.log('[Debug] 运行 checkUpdateStatus');
+    const allButtons = document.querySelectorAll('button');
+    const stopGeneratingElement = Array.from(allButtons).find(el => el.textContent.includes("Stop generating"));
+    if (!stopGeneratingElement && isUpdating) { // 内容更新完成
+        console.log('内容更新完成，准备添加链接');
+        isUpdating = false; // 更新状态设置为false
+
+        if (rerunTimeout) {
+            clearTimeout(rerunTimeout); // 清除延时
+            console.log('[Debug] 清除之前的延时');
+        }
+        // 设置延时，等待2秒
+        rerunTimeout = setTimeout(() => {
+            console.log('延时结束，开始添加链接'); // 延时结束，开始添加链接
+
+            // 先找到父级对象
+            const parentElements = document.querySelectorAll('.flex.flex-grow.flex-col.gap-3.max-w-full');
+            parentElements.forEach(parent => {
+                // 在父级对象下面找特定的子元素
+                const chatRecordElements = parent.querySelectorAll('div.markdown.prose.w-full.break-words,li');
+                chatRecordElements.forEach(processElement);
+            });
+            stopListening();
+        }, 300);
+    }
+}
+
+function startListening() {
+    isUpdating = true;
+    shouldContinue = true;
+    intervalID = setInterval(checkUpdateStatus, 1000);
+    console.log('监听已开启');
+}
+
+function stopListening() {
+    shouldContinue = false;
+    clearInterval(intervalID);
+    console.log('监听已停止');
+}
+
+////////////////////////// Settings functions //////////////////////////
+
 
 function showSettingsModal() {
     const modal = document.createElement('div');
@@ -529,4 +632,31 @@ function updateMenuItems() {
 }
 
 
+
+////////////////////////// Main //////////////////////////
+
+initContextMenu();
 updateMenuItems();
+
+document.addEventListener('mouseup', function(event) {
+    const selectedText = window.getSelection().toString();
+    if (selectedText.length == 0) {
+        hideContextMenu();
+    } else {
+        showContextMenu(event);
+    }
+});
+
+document.addEventListener('dblclick', function(event) {
+    showContextMenu(event);
+});
+
+const observer = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+        if (entry.name.includes('https://chat.openai.com/backend-api/conversation')) {
+            startListening();
+        }
+    }
+});
+observer.observe({ entryTypes: ['resource'] });
+
