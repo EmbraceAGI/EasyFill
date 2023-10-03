@@ -441,8 +441,12 @@ function replace_text(original) {
     clicks.forEach(([regExpression, template]) => {
         original = original.replace(regExpression, (match, p1) => {
             // 使用模板替换找到的匹配项
-            let replaced = template.replace('{__PLACE_HOLDER__}', p1);
-            return `<a class="custom-link" data-text="${replaced}">${p1}</a>`;
+            let replaced = template.replace(/{__PLACE_HOLDER__}/g, p1);
+            if (template.includes('{__PLACE_HOLDER__}')) {
+                return `<a class="custom-link" data-text="${replaced}">${p1}</a>`;
+            } else {
+                return `<a class="custom-link" data-text="${replaced}">${regExpression.source}</a>`;
+            }
         });
     });
     return original;
@@ -454,7 +458,13 @@ function processElement(element) {
         return;
     }
 
+    const hidden_characters = "\u200B\u200B\u200B\u200B\u200B\u200B";
+
     let innerHTML = element.innerHTML;
+
+    if (innerHTML.startsWith(hidden_characters)) {
+        return; // 不重复处理
+    }
 
     // 处理[[ ]] 符号
     const bracketRegex = /\[\[(.*?)\]\]/g;
@@ -463,7 +473,7 @@ function processElement(element) {
     // 替换了 innerHTML 后，原本网页中 Copy code 之类的事件监听就失效了。
     // 为了尽可能让两个功能共存，这里仅对文字有改动的重新赋值。
     if (innerHTML != element.innerHTML) {
-        element.innerHTML = innerHTML;
+        element.innerHTML = hidden_characters + innerHTML; // 添加隐藏字符，避免重复处理
     }
 
     // 给新生成的链接添加事件监听
@@ -665,6 +675,8 @@ function parseClicks(settingText) {
     // 根据 📖📖📖📖📖📖📖📖 分割设置文件，并移除首尾的空值
     const configArray = settingText.split('📖📖📖📖📖📖📖📖').filter(Boolean);
 
+    let templates = []
+
     // 遍历每个设置
     configArray.forEach(config => {
         // 按行分割配置
@@ -673,10 +685,22 @@ function parseClicks(settingText) {
         const regExpression = new RegExp(lines[0], 'g');
         // 后续行组成替换模板
         const template = lines.slice(1).join('\n');
+        templates.push(template);
 
-        // 将政策表达式和模板添加到政策数组中
-        clicks.push([regExpression, template]);
+        // 逐一检查 templates 中是否有能够匹配 regExpression 的模板
+        // 如果有，新的内容需要添加在该 templates 前面，以避免被之前的模板匹配
+        let index = clicks.findIndex(c => c[1].match(regExpression));
+        if (index >=0) {
+            // 如果有匹配的模板，则将新的[regExpression, template] 插入到该模板前面
+            clicks.splice(index, 0, [regExpression, template]);
+            
+        } else {
+            // 如果没有匹配的模板，则将新的[regExpression, template] 添加到数组末尾
+            clicks.push([regExpression, template]);
+        }
     });
+
+    console.log(clicks);
 }
 
 
