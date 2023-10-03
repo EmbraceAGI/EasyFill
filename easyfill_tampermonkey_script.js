@@ -165,6 +165,15 @@ const style = `
         border: 0px;
     }
 
+    .settings-input {
+        width: 100%;
+        padding: 8px 20px;
+        background-color: #fff;
+        color: #000;
+        border: 0;
+        border-radius: 5px;
+    }    
+
     .settings-textarea {
         width: 100%;
         height: calc(100% - 60px); 
@@ -310,9 +319,6 @@ const style = `
     }
 `;
 
-const iconSetting = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAANhJREFUOE+lk2sSgzAIhFkvVr2B8ULaCxlvoL1Y6JARB/Nqp/VfJCwfCwE1vnEcewlv23bUrqEWkGQAu8SZeaiJ3AScczuAVwjhADATUSQA8FzXdZmmaWHm2QpeApKsCa22NKYil4BFTrHPyo+UKNLZas45lrP3vuiNUmYt2Arab6kNpZQ74pMYixZ6SUQptc3/BURJKLqu69MRpQQ6xlsLiYlxlJ9MtPHqGK2Zp0/ZYt3GqHiNJZL3EDeTiA7v/ZDtgYjIT7u2dpWVRJMzAVv9p8eU4n/znN/5jr5xu8638gAAAABJRU5ErkJggg==';
-const iconEdit = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAZJJREFUWEfFV9ttwzAMlCZrsoHlhZosZHmDOouZAY0SoGXJPMopmq98CLyHjhQdwz//4hX8cRwf0zQ9rtToJsDgRPTN4DHGZy+RbgIpJdLKmcS6rss8z4vHkS4Cop5BGUyc6HGji4CoJ6K7KNZX4iHiJqDV1+7dS8RFAA0eem5zyhOYMngtqzWBnPMpBkygLHpmtRBF2hMmUCvKJHQXMCARfYUQbgg4fAXe4HFhy3q5etOBYRhYzQ9SNKXE52D1kAOWelHiCd5ugp51gaeoJ3gwAbQo6lJNbDMDSv2Sc76fOYUSdRFAi15R3wwhWtSTkZaDhyvwFO1pu5JIk4A1yTxEz/KzI1DM9yXG+GqtWmhGrMduR0AsLVetkgSaEQv8EEI1djf1rVWrthEhYGYbagLS++WzG0LgpdM17+EM8EFRp1+z8tlFHibUkUMXSA5k4WRXfjcf/gaQ/93fAWYbqiDKfr+Bqp85mlH11Umo338NSkTP8qOj1jUIuF7nD1egg1gD1QB/QgBR8Mkz5kr2SbBarTe3GoEwVJGU+QAAAABJRU5ErkJggg==';
-const iconSend = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAWNJREFUWEftVkESwiAMJH1Z/UHph9QPlf7A+rHGCSMOYoIJtXqRY4eym012AdyPF/wY3/0JfE2BYRh6ADgCwHWaplNq/e4EErBzridQRDzM87zsTqAEToAhhKeiP66ABLw7gXfAdwJLCOGQW3+zAkrgiAkA53wA47fWILIAPwbuEwRagBOB0gEmBQzAZLFouXKVDlARMABHjwPARWjrywBWCViAnXMLIp4p6aTquQFkCRiB6YxY2TiOJ0QkAuxSEbiDSxK+HJwOfQfORXA1ijUHWsAJjBvA6gzUSORyeu9RkSXsAKpcUBLJvey9p3axlnuKWyaAqi3gKiIi67ou6SrVtKmWgGYCOSkLeG0AVS2Q1KhZTpOAmxWgW02rhOSAZgVo8g02FB2wiUD8OZtuSQ0pATe1IHm/lJaStOu6Pp+P3Qhwd3uqKlejtq+5BVRp/rSWkpCIlE+wcm/zk0wRv6otfwI3KLv7Id7vNIsAAAAASUVORK5CYII=';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = style;
 document.head.appendChild(styleElement);
@@ -659,6 +665,104 @@ function showSettingsModal() {
     });
 }
 
+function showAddTemplateModal(selectText) {
+    let choosedIndex = setting_current_index;
+
+    const modal = document.createElement('div');
+    modal.className = 'settings-modal';
+
+    const labelText = document.createElement('p');
+    labelText.textContent = '将内容添加到选定功能组';
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'settings-content';
+
+    const inputField = document.createElement('input');
+    inputField.type = 'text';
+    inputField.placeholder = '这里填写会出现在菜单上的功能名称';
+    inputField.className = 'settings-input';
+    
+    const labelInstruction = document.createElement('p');
+    labelInstruction.textContent = '下方是 prompt 模版，使用 {__PLACE_HOLDER__} 作为占位符。'
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'settings-textarea';
+    textarea.value = selectText;
+    
+    const submitButton = document.createElement('button');
+    submitButton.className = 'settings-button';
+    submitButton.textContent = '添加到选定功能组';
+    submitButton.disabled = true;
+
+    function updateSubmitButton() {
+        if (inputField.value.trim() == '' || textarea.value.trim() == '') {
+            submitButton.disabled = true;
+        } else {
+            submitButton.disabled = false;
+        }
+    }
+    inputField.addEventListener('input', updateSubmitButton);
+    textarea.addEventListener('input', updateSubmitButton);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'settings-button';
+    cancelButton.textContent = '取消';
+
+    const settingsDropdown = document.createElement('select');
+    settingsDropdown.className = 'settings-dropdown';
+    setting_texts.forEach((text, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.text = text.split('\n')[0]; // Assuming the first line is a title or identifier
+        settingsDropdown.appendChild(option);
+    });
+    settingsDropdown.selectedIndex = choosedIndex;
+    settingsDropdown.addEventListener('change', (e) => {
+        choosedIndex = e.target.value;
+    });     
+
+    modalContent.appendChild(labelText);
+    modalContent.appendChild(settingsDropdown); 
+    modalContent.appendChild(inputField);
+    modalContent.appendChild(labelInstruction);
+    modalContent.appendChild(textarea);
+    modalContent.appendChild(submitButton);
+    modalContent.appendChild(cancelButton);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    submitButton.addEventListener('click', () => {
+        choosedIndex = settingsDropdown.selectedIndex;
+        if (typeof setting_texts[choosedIndex] === 'undefined') {
+            console.error("Trying to save a setting that doesn't exist.");
+            return;
+        }
+
+        let original = setting_texts[choosedIndex];
+        let toAdd = '\n🪄🪄🪄🪄🪄🪄🪄🪄\n' + inputField.value + '\n' + textarea.value + '\n';
+        // 找到 original 中第一个 📖📖📖📖📖📖📖📖 的位置，在此之前插入 textarea.value
+        // 如果没有找到，则在末尾插入
+        let index = original.indexOf('📖📖📖📖📖📖📖📖');
+        if (index >= 0) {
+            setting_texts[choosedIndex] = original.slice(0, index) + toAdd + original.slice(index);
+        } else {
+            setting_texts[choosedIndex] = original + toAdd;
+        }
+        
+        localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
+        current_setting_text = setting_texts[setting_current_index];
+        if (current_setting_text) {
+            updateMenuItems();
+            processAllElements();
+        }
+        modal.remove();
+    });
+
+    cancelButton.addEventListener('click', () => {
+        modal.remove();
+    });
+}
+
 let menus = [];
 let clicks = []
 
@@ -736,6 +840,7 @@ function updateMenuItems() {
         ));
     });
     menuContainer.appendChild(createMenuItem('设置', function() {showSettingsModal();}, null));
+    menuContainer.appendChild(createMenuItem('添加为模版', function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
 }
 
 
