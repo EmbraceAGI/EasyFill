@@ -156,7 +156,8 @@ const style = `
         border-radius: 10px;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        padding: 20px;
+        gap: 10px;
     }
 
     .settings-dropdown {
@@ -176,20 +177,21 @@ const style = `
         box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.024) 0px 0px 5px, rgba(0, 0, 0, 0.05) 0px 1px 2px;
     }
 
-    .settings-submit {
+    .settings-button {
         background-color: #469c7b;
         color: #fff;
         padding: 8px 18px;
         border: none;
         border-radius: 30px;
         cursor: pointer;    
+        margin: 0 5px;
     }
 
-    .settings-submit:hover {
+    .settings-button:hover {
         background-color: #93B1A6;
     }
 
-    .settings-submit:disabled {
+    .settings-button:disabled {
         background-color: #B4B4B3;  /* 灰色背景 */
         color: #808080;            /* 深灰色文字 */
         cursor: not-allowed;       /* 禁用的光标样式 */
@@ -199,66 +201,75 @@ const style = `
         display: none;
         position: absolute;
     }
-
+    
     #menuContainer {
         width: auto;
         display: inline-block;
         background-color: #fff;
         color: #000;
         border-radius: 0.55em;
-        border: 0px;
         padding: 5px;
         box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.1) 0px 2px 5px, rgba(0, 0, 0, 0.05) 0px 3px 3px;
-        border-bottom: 1px solid #f0f0f0; /* 浅灰色的线条 */
-        padding: 5px 0;
+        border-bottom: 1px solid #f0f0f0;
     }
     
-    #menuContainer div {
+    #menuContainer div.menu-item {
         display: flex;
         align-items: center;
         width: auto;
-        border-bottom: 1px solid #f0f0f0; /* 浅灰色的线条 */
+        max-width: calc(200px + 40px + 5px); /* 左侧按钮最大宽度 + 右侧按钮宽度 + 间隔 */
+        border-bottom: 1px solid #f0f0f0;
         padding: 5px 0;
         margin: 0 5px;
-      }
-      
-      #menuContainer button {
+    }
+    
+    #menuContainer button.menu-button {
         border: none;
         background: none;
-        text-align: left;
         padding: 5px 10px;
         margin: 0;
-        width: auto;
-        white-space: nowrap; /* 防止换行 */
+        white-space: nowrap;
         border-radius: 5px;
         transition: background-color 0.3s ease;
-      }
-      
-      #menuContainer button:hover {
+    }
+    
+    #menuContainer button.menu-button:hover {
         background-color: #f1f1f1;
-      }
-      
-      #menuContainer button:disabled {
+    }
+    
+    #menuContainer button.menu-button:disabled {
         height: 1px;
         color: #c6c6c600;
         padding: 0;
         border-bottom: 1px solid #dddddd8c;
-      }
-      
-      #menuContainer button:disabled:hover {
+    }
+    
+    #menuContainer button.menu-button:disabled:hover {
         background: none;
-      }
-      
-      #menuContainer button img {
-        height: 20px;  // 可以根据需要调整
-        width: 20px;   // 可以根据需要调整
+    }
+    
+    #menuContainer button.menu-button img {
+        height: 20px;
+        width: 20px;
         margin-right: 10px;
-      }
-      
-      #menuContainer button:nth-child(2) {
-        text-align: center;
-      }
-
+    }
+    
+    #menuContainer button.left-part {
+        flex-grow: 1;
+        flex-shrink: 0;
+        flex-basis: auto;
+        max-width: 200px;
+        text-align: left;
+    }
+    
+    #menuContainer button.right-part {
+        flex-grow: 0;
+        flex-shrink: 0;
+        width: 30px;
+        text-align: right;
+    }
+    
+    
     /* 使链接看起来更像链接 */
     .custom-link {
         text-decoration: underline;
@@ -348,49 +359,35 @@ async function sendToGPT(template, selectedText, sendDirectly) {
 }
 
 // 创建单个菜单项
-function createMenuItem(label, icon1, icon2, action1, action2) {
+function createMenuItem(label, action1, action2) {
     const menuItem = document.createElement('div');
-    menuItem.style.display = 'flex';
-    menuItem.style.alignItems = 'center';
-  
+    menuItem.classList.add('menu-item');
+
     const leftPart = document.createElement('button');
-    leftPart.style.flex = '0.8';
-    leftPart.style.display = 'flex';
-    leftPart.style.alignItems = 'center';
-  
-    const textLabel = document.createElement('span');
-    textLabel.innerHTML = '  ' + label + '  ';
-    leftPart.appendChild(textLabel);
-  
+    leftPart.classList.add('menu-button', 'left-part');
+    leftPart.innerHTML = label;
+
     if (action1 == null) {
         leftPart.disabled = true;
     } else {
         leftPart.onclick = () => {
-        action1();
-        contextMenu.style.display = 'none';
-      };
+            action1();
+            contextMenu.style.display = 'none';
+        };
     }
     menuItem.appendChild(leftPart);
-  
-    const rightPart = document.createElement('button');
-    if (icon2 !== null) {
-        rightPart.style.flex = '0.2';
-        rightPart.style.display = 'flex';
-        rightPart.style.alignItems = 'center';
-        
-        const rightIcon = document.createElement('img');
-        rightIcon.src = icon2;
-        rightPart.appendChild(rightIcon);
-    }
-    if (action2 == null) {
-        rightPart.disabled = true;
-    } else {
+
+    if (action2 != null) {
+        const rightPart = document.createElement('button')
+        rightPart.classList.add('menu-button', 'right-part');
+        rightPart.innerHTML = '≋';
+
         rightPart.onclick = () => {
             action2();
             contextMenu.style.display = 'none';
-       };
+        };
+        menuItem.appendChild(rightPart);
     }
-    menuItem.appendChild(rightPart);
     
     return menuItem;
 }
@@ -532,8 +529,12 @@ function showSettingsModal() {
     textarea.value = current_setting_text;
 
     const submitButton = document.createElement('button');
-    submitButton.className = 'settings-submit';
-    submitButton.textContent = 'Apply Settings';
+    submitButton.className = 'settings-button';
+    submitButton.textContent = '保存设置';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'settings-button';
+    cancelButton.textContent = '取消修改';
 
     const settingsDropdown = document.createElement('select');
     settingsDropdown.className = 'settings-dropdown';
@@ -555,11 +556,9 @@ function showSettingsModal() {
     });
 
     const buttonsContainer = document.createElement('div');
-    buttonsContainer.style.display = 'flex';
-    buttonsContainer.style.gap = '10px';  // 两个按钮之间的间距
     const newSettingButton = document.createElement('button');
     newSettingButton.textContent = '添加新功能组';
-    newSettingButton.className = 'settings-submit';
+    newSettingButton.className = 'settings-button';
     newSettingButton.addEventListener('click', () => {
         textarea.value = setting_new_setting_text;
         setting_texts.push(textarea.value);
@@ -572,7 +571,7 @@ function showSettingsModal() {
     });
     const deleteSettingButton = document.createElement('button');
     deleteSettingButton.textContent = '删除当前功能组';
-    deleteSettingButton.className = 'settings-submit';
+    deleteSettingButton.className = 'settings-button';
     deleteSettingButton.addEventListener('click', () => {
         // 如果只剩一个设置，则不进行删除操作
         if (setting_texts.length <= 1) {
@@ -618,15 +617,9 @@ function showSettingsModal() {
     modalContent.appendChild(buttonsContainer); 
     modalContent.appendChild(textarea);
     modalContent.appendChild(submitButton);
+    modalContent.appendChild(cancelButton);
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
-
-    // Hide the modal when clicking outside the content
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
 
     submitButton.addEventListener('click', () => {
         const selectedSettingIndex = settingsDropdown.selectedIndex;
@@ -643,6 +636,10 @@ function showSettingsModal() {
         if (current_setting_text) {
             updateMenuItems();
         }
+        modal.remove();
+    });
+
+    cancelButton.addEventListener('click', () => {
         modal.remove();
     });
 }
@@ -701,8 +698,6 @@ function updateMenuItems() {
     menus.forEach(menu => {
         menuContainer.appendChild(
             createMenuItem(menu[0], 
-                iconSend,
-                iconEdit,
                 async function() {
                     await sendToGPT(menu[1], window.getSelection().toString().trim(), true);
                 },
@@ -711,7 +706,7 @@ function updateMenuItems() {
                 },
         ));
     });
-    menuContainer.appendChild(createMenuItem('设置', iconSetting, null, function() {showSettingsModal();}, null));
+    menuContainer.appendChild(createMenuItem('设置', function() {showSettingsModal();}, null));
 }
 
 
