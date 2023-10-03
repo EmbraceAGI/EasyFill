@@ -329,9 +329,37 @@ let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || defa
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
 
+function replace_all_textarea(text) {
+    // 查找所有匹配按钮文本 "Save & Submit" 的 div
+    let buttons = Array.from(document.querySelectorAll('div.flex.w-full.gap-2.items-center.justify-center'));
+
+    buttons.forEach(button => {
+        // 检查按钮文本是否为 "Save & Submit"
+        if (button.textContent.trim() === 'Save & Submit') {
+            // 向上查找其祖先元素，直到找到一个拥有 `flex flex-grow flex-col gap-3 max-w-full` 这个 class 的 div
+            let parentDiv = button.closest('.flex.flex-grow.flex-col.gap-3.max-w-full');
+            
+            if (parentDiv) {
+                // 在这个祖先 div 内，查找 `textarea` 元素
+                let textarea = parentDiv.querySelector('textarea');
+                
+                if (textarea) {
+                    // 替换这个 `textarea` 的内容为 "TEMPLATE_TEXT"
+                    textarea.value = text;
+                }
+            }
+        }
+    });
+}
+
 async function sendToGPT(template, selectedText, sendDirectly) {
     let placeholderPosition = template.indexOf('{__PLACE_HOLDER__}');
     let finalText = template.replace('{__PLACE_HOLDER__}', selectedText);
+
+    if (!sendDirectly) {
+        replace_all_textarea(finalText);
+    }
+
     const inputElement = document.getElementById('prompt-textarea');
     inputElement.value = finalText;
 
@@ -842,8 +870,6 @@ function updateMenuItems() {
     menuContainer.appendChild(createMenuItem('设置', function() {showSettingsModal();}, null));
     menuContainer.appendChild(createMenuItem('添加为模版', function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
 }
-
-
 
 ////////////////////////// Main //////////////////////////
 
