@@ -329,10 +329,12 @@ async function sendToGPT(template, selectedText, sendDirectly) {
     const inputElement = document.getElementById('prompt-textarea');
     inputElement.value = finalText;
 
+    const inputEvent = new Event('input', { 'bubbles': true });
+    inputElement.dispatchEvent(inputEvent);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+
     if (sendDirectly) {
-        const inputEvent = new Event('input', { 'bubbles': true });
-        inputElement.dispatchEvent(inputEvent);
-        await new Promise(resolve => setTimeout(resolve, 50));
         const sendButton = document.querySelector('[data-testid="send-button"]');
         if (sendButton) {
             sendButton.click();
