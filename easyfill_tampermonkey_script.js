@@ -483,6 +483,16 @@ function processElement(element) {
     });
 }
 
+function processAllElements() {
+    // 先找到父级对象
+    const parentElements = document.querySelectorAll('.flex.flex-grow.flex-col.gap-3.max-w-full');
+    parentElements.forEach(parent => {
+        // 在父级对象下面找特定的子元素
+        const chatRecordElements = parent.querySelectorAll('div.markdown.prose.w-full.break-words,li');
+        chatRecordElements.forEach(processElement);
+    });
+}
+
 // 这个部分是用来检测GPT是否在更新的
 function checkUpdateStatus() {
     if (!shouldContinue) return;
@@ -499,15 +509,7 @@ function checkUpdateStatus() {
         }
         // 设置延时，等待2秒
         rerunTimeout = setTimeout(() => {
-            console.log('延时结束，开始添加链接'); // 延时结束，开始添加链接
-
-            // 先找到父级对象
-            const parentElements = document.querySelectorAll('.flex.flex-grow.flex-col.gap-3.max-w-full');
-            parentElements.forEach(parent => {
-                // 在父级对象下面找特定的子元素
-                const chatRecordElements = parent.querySelectorAll('div.markdown.prose.w-full.break-words,li');
-                chatRecordElements.forEach(processElement);
-            });
+            processAllElements();
             stopListening();
         }, 300);
     }
@@ -647,6 +649,7 @@ function showSettingsModal() {
         setting_current_index = selectedSettingIndex;
         if (current_setting_text) {
             updateMenuItems();
+            processAllElements();
         }
         modal.remove();
     });
