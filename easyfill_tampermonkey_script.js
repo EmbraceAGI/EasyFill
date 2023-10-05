@@ -211,6 +211,13 @@ const style = `
         position: absolute;
     }
 
+    .pinned-menu {
+        position: fixed;
+        right: 10px; 
+        top: 50%; 
+        transform: translateY(-50%); /* 这将使元素垂直居中，无论其高度是多少 */
+    }
+    
     #menuContainer {
         width: auto;
         display: inline-block;
@@ -250,7 +257,7 @@ const style = `
         display: flex;
         align-items: center;
         width: auto;
-        max-width: calc(200px + 40px + 5px); /* 左侧按钮最大宽度 + 右侧按钮宽度 + 间隔 */
+        max-width: 200px; 
         padding: 0 0;
         margin: 0 5px;
     }
@@ -284,14 +291,17 @@ const style = `
         flex-grow: 1;
         flex-shrink: 0;
         flex-basis: auto;
-        max-width: 200px;
+        max-width: 160px;
         text-align: left;
+        overflow: hidden;       /* 这会确保内容被裁剪 */
+        white-space: nowrap;    /* 防止文本换行 */
+        text-overflow: ellipsis;/* 超出的文本将显示为... */
     }
 
     #menuContainer button.right-part {
         flex-grow: 0;
         flex-shrink: 0;
-        width: 36px;
+        width: 40px;
         text-align: right;
     }
 
@@ -347,7 +357,7 @@ styleElement.innerHTML = style;
 document.head.appendChild(styleElement);
 
 
-////////////////////////// Easy Fill functions //////////////////////////
+////////////////////////// Send Prompt functions //////////////////////////
 let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
@@ -413,9 +423,14 @@ async function sendToGPT(template, selectedText, sendDirectly) {
         }
         inputElement.setSelectionRange(cursorPosition, cursorPosition);
     }
-
-
 }
+
+////////////////////////// Context Menu functions //////////////////////////
+
+// 创建上下文菜单
+const contextMenu = document.createElement('div');
+const menuContainer = document.createElement('div');
+let isMenuPinned = false;
 
 function createPathElement(svgPathData) {
     // 创建一个`path`元素并设置SVG路径数据
@@ -424,6 +439,26 @@ function createPathElement(svgPathData) {
     pathElement.setAttribute("fill", "#5D5D5D");
     return pathElement;
 }
+
+function createPinButton() {
+    const pinButton = document.createElement('button');
+    pinButton.innerHTML = '📌'; // 使用pin emoji作为按钮的内容
+    pinButton.style.position = 'absolute';
+    pinButton.style.right = '5px';
+    pinButton.style.top = '5px';
+    pinButton.onclick = function() {
+        isMenuPinned = !isMenuPinned;
+        pinButton.innerHTML = isMenuPinned ? '🔓' : '📌';
+    
+        if (isMenuPinned) {
+            menuContainer.classList.add('pinned-menu');
+        } else {
+            menuContainer.classList.remove('pinned-menu');
+        }
+    };    
+    return pinButton;
+}
+
 
 function createMenuTitle() {
     const menuTitle = document.createElement('div');
@@ -453,7 +488,7 @@ function createMenuItem(index, label, icon, action1, action2) {
     } else {
         leftPart.onclick = () => {
             action1();
-            contextMenu.style.display = 'none';
+            hideContextMenu();
         };
     }
     menuItem.appendChild(leftPart);
@@ -475,7 +510,7 @@ function createMenuItem(index, label, icon, action1, action2) {
 
         rightPart.onclick = () => {
             action2();
-            contextMenu.style.display = 'none';
+            hideContextMenu();
         };
         menuItem.appendChild(rightPart);
     }
@@ -484,6 +519,10 @@ function createMenuItem(index, label, icon, action1, action2) {
 }
 
 function hideContextMenu() {
+    if (isMenuPinned) {
+        return;
+    }
+
     contextMenu.style.display = 'none';
 }
 
@@ -509,6 +548,83 @@ function showContextMenu(event) {
     }
     
     contextMenu.style.display = 'block';
+}
+
+function updateMenuItems() {
+    parseSettingsText(current_setting_text);
+
+    menuContainer.innerHTML = '';
+    menuContainer.appendChild(createPinButton());
+    menuContainer.appendChild(createMenuTitle());
+    menuContainer.appendChild(createMenuSeparator());
+
+    menus.forEach((menu, index) => {
+        menuContainer.appendChild(
+            createMenuItem(index + 1,
+                menu[0],
+                svgEditBeforeSend,
+                async function() {
+                    await sendToGPT(menu[1], window.getSelection().toString().trim(), true);
+                },
+                async function() {
+                    await sendToGPT(menu[1], window.getSelection().toString().trim(), false);
+                },
+        ));
+    });
+
+    menuContainer.appendChild(createMenuSeparator());
+    menuContainer.appendChild(createMenuItem('S', '设置', null, function() {showSettingsModal();}, null));
+    menuContainer.appendChild(createMenuItem('A', '添加为模版', null, function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
+}
+
+function isMenuVisible() {
+    return contextMenu.style.display == 'block';
+}
+
+function shouldResponseForContextMenu() {
+    if (isMenuPinned) {
+        if (!isMenuVisible())  { 
+            // Should not be here. Just to make sure pin is removed if menu is not visible.
+            isMenuPinned = false;
+        }
+        return false;
+    }
+
+    // 查找 settings-modal，如果 settings-modal 存在，就不响应右键菜单
+    const settingsModal = document.querySelector('.settings-modal');
+    if (settingsModal) {
+        return false;
+    }
+
+    return true;
+}
+
+function initContextMenu() {
+    contextMenu.id = 'contextMenu';
+    menuContainer.id = 'menuContainer';
+    contextMenu.appendChild(menuContainer);
+    document.body.appendChild(contextMenu);
+
+    updateMenuItems();
+
+    document.addEventListener('mouseup', function(event) {
+        if (!shouldResponseForContextMenu()) {
+            return;
+        }
+        const selectedText = window.getSelection().toString();
+        if (selectedText.length == 0) {
+            hideContextMenu();
+        } else {
+            showContextMenu(event);
+        }
+    });
+
+    document.addEventListener('dblclick', function(event) {
+        if (!shouldResponseForContextMenu()) {
+            return;
+        }
+        showContextMenu(event);
+    });
 }
 
 ////////////////////////// Easy Click functions //////////////////////////
@@ -926,57 +1042,9 @@ function parseSettingsText(settingsText) {
     }
 }
 
-function updateMenuItems() {
-    parseSettingsText(current_setting_text);
-
-    menuContainer.innerHTML = '';
-    menuContainer.appendChild(createMenuTitle());
-    menuContainer.appendChild(createMenuSeparator());
-
-    menus.forEach((menu, index) => {
-        menuContainer.appendChild(
-            createMenuItem(index + 1,
-                menu[0],
-                svgEditBeforeSend,
-                async function() {
-                    await sendToGPT(menu[1], window.getSelection().toString().trim(), true);
-                },
-                async function() {
-                    await sendToGPT(menu[1], window.getSelection().toString().trim(), false);
-                },
-        ));
-    });
-
-    menuContainer.appendChild(createMenuSeparator());
-    menuContainer.appendChild(createMenuItem('S', '设置', null, function() {showSettingsModal();}, null));
-    menuContainer.appendChild(createMenuItem('A', '添加为模版', null, function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
-}
-
 ////////////////////////// Main //////////////////////////
 
-// 创建上下文菜单
-const contextMenu = document.createElement('div');
-const menuContainer = document.createElement('div');
-contextMenu.id = 'contextMenu';
-menuContainer.id = 'menuContainer';
-contextMenu.appendChild(menuContainer);
-document.body.appendChild(contextMenu);
-
-updateMenuItems();
-
-document.addEventListener('mouseup', function(event) {
-    const selectedText = window.getSelection().toString();
-    if (selectedText.length == 0) {
-        hideContextMenu();
-    } else {
-        showContextMenu(event);
-    }
-});
-
-document.addEventListener('dblclick', function(event) {
-    showContextMenu(event);
-});
-
+initContextMenu();
 const observer = new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
         if (entry.name.includes('https://chat.openai.com/backend-api/conversation')) {
