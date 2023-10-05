@@ -50,10 +50,6 @@ prompt多长都没关系
 \[\[(.*?)\]\]
 在按钮之后可以用八个📖分隔，带上点击直接发送的内容。
 第一行是正则匹配，后面是模版。匹配到的内容会替代掉{__PLACE_HOLDER__}中的内容然后被直接发送。
-📖📖📖📖📖📖📖📖
-<strong>(.*?)<\/strong>
-可以设置多个直接点击项，每一项用不同的正则匹配即可。让 GPT 输出不同格式的内容，定义成不同的后续行动。
-{__PLACE_HOLDER__}
 `;
 
 
@@ -212,6 +208,28 @@ const style = `
         background-color: #B4B4B3;  /* 灰色背景 */
         color: #808080;            /* 深灰色文字 */
         cursor: not-allowed;       /* 禁用的光标样式 */
+    }
+
+    .setting-confirm {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #f0f1ee;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+        padding: 20px;
+        z-index: 2000; 
+    }
+    
+    .confirm-content {
+        color: #535e5e;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
     #contextMenu {
@@ -659,6 +677,12 @@ function initContextMenu() {
         }
         showContextMenu(event);
     });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            hideContextMenu();
+        }
+    });
 }
 
 ////////////////////////// Easy Click functions //////////////////////////
@@ -693,7 +717,6 @@ async function clickHandler(event) {
     }
 
 }
-
 
 function replace_text(original) {
     clicks.forEach(([regExpression, template]) => {
@@ -788,6 +811,38 @@ function stopListening() {
 
 ////////////////////////// Settings functions //////////////////////////
 
+function closeModal(settingConfirm) {
+    settingConfirm.style.display = 'flex';
+}
+
+function createConfirmModal(modal) {
+    const settingConfirm = document.createElement('div');
+    settingConfirm.className = 'setting-confirm';
+    const confirmContent = document.createElement('div');
+    confirmContent.className = 'confirm-content';
+    const confirmText = document.createElement('p');
+    confirmText.textContent = '确定放弃修改？';
+    const confirmYes = document.createElement('button');
+    confirmYes.className = 'settings-button';
+    confirmYes.textContent = '确定';
+    const confirmNo = document.createElement('button');
+    confirmNo.className = 'settings-button';
+    confirmNo.textContent = '取消';
+    confirmYes.onclick = function() {
+        modal.remove();
+        settingConfirm.style.display = 'none'; // Hide the confirm box
+    }
+
+    confirmNo.onclick = function() {
+        settingConfirm.style.display = 'none'; // Hide the confirm box
+    }
+
+    confirmContent.appendChild(confirmText);
+    confirmContent.appendChild(confirmYes);
+    confirmContent.appendChild(confirmNo);
+    settingConfirm.appendChild(confirmContent);
+    return settingConfirm;
+}
 
 function showSettingsModal() {
     const modal = document.createElement('div');
@@ -890,25 +945,6 @@ function showSettingsModal() {
         modeSettingButton.textContent = menuModeText();
     });
 
-    const buttonsLeft = document.createElement('span');
-    const buttonsRight = document.createElement('span');
-    buttonsLeft.appendChild(newSettingButton);
-    buttonsLeft.appendChild(deleteSettingButton);
-    buttonsRight.appendChild(modeSettingButton);
-
-    const buttonsContainer = document.createElement('div');
-    buttonsContainer.className = 'buttonsContainer';
-    buttonsContainer.appendChild(buttonsLeft);
-    buttonsContainer.appendChild(buttonsRight);
-    
-    modalContent.appendChild(settingsDropdown);
-    modalContent.appendChild(buttonsContainer);
-    modalContent.appendChild(textarea);
-    modalContent.appendChild(submitButton);
-    modalContent.appendChild(cancelButton);
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-
     submitButton.addEventListener('click', () => {
         const selectedSettingIndex = settingsDropdown.selectedIndex;
         if (typeof setting_texts[selectedSettingIndex] === 'undefined') {
@@ -928,9 +964,30 @@ function showSettingsModal() {
         modal.remove();
     });
 
+    const settingConfirm = createConfirmModal(modal);
     cancelButton.addEventListener('click', () => {
-        modal.remove();
+        closeModal(settingConfirm, modal);
     });
+
+    const buttonsLeft = document.createElement('span');
+    const buttonsRight = document.createElement('span');
+    buttonsLeft.appendChild(newSettingButton);
+    buttonsLeft.appendChild(deleteSettingButton);
+    buttonsRight.appendChild(modeSettingButton);
+
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'buttonsContainer';
+    buttonsContainer.appendChild(buttonsLeft);
+    buttonsContainer.appendChild(buttonsRight);
+    
+    modalContent.appendChild(settingsDropdown);
+    modalContent.appendChild(buttonsContainer);
+    modalContent.appendChild(textarea);
+    modalContent.appendChild(submitButton);
+    modalContent.appendChild(cancelButton);
+    modal.appendChild(modalContent);
+    modal.appendChild(settingConfirm);
+    document.body.appendChild(modal);
 }
 
 function showAddTemplateModal(selectText) {
@@ -989,16 +1046,6 @@ function showAddTemplateModal(selectText) {
         choosedIndex = e.target.value;
     });
 
-    modalContent.appendChild(labelText);
-    modalContent.appendChild(settingsDropdown);
-    modalContent.appendChild(inputField);
-    modalContent.appendChild(labelInstruction);
-    modalContent.appendChild(textarea);
-    modalContent.appendChild(submitButton);
-    modalContent.appendChild(cancelButton);
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-
     submitButton.addEventListener('click', () => {
         choosedIndex = settingsDropdown.selectedIndex;
         if (typeof setting_texts[choosedIndex] === 'undefined') {
@@ -1026,9 +1073,22 @@ function showAddTemplateModal(selectText) {
         modal.remove();
     });
 
+    const settingConfirm = createConfirmModal(modal);
+
     cancelButton.addEventListener('click', () => {
-        modal.remove();
+        closeModal(settingConfirm, modal);
     });
+
+    modalContent.appendChild(labelText);
+    modalContent.appendChild(settingsDropdown);
+    modalContent.appendChild(inputField);
+    modalContent.appendChild(labelInstruction);
+    modalContent.appendChild(textarea);
+    modalContent.appendChild(submitButton);
+    modalContent.appendChild(cancelButton);
+    modal.appendChild(modalContent);
+    modal.appendChild(settingConfirm);
+    document.body.appendChild(modal);
 }
 
 let menus = [];
