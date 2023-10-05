@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EasyFill
 // @namespace    http://easyfill.tool.elfe/
-// @version      0.5
+// @version      0.6
 // @description  超级方便的 GPT 对话助手，通过划选或点击，把内容填充到预置 prompt 模版直接发送。支持多个功能组设置。
 // @author       Elfe & ttmouse & GPT
 // @match        https://chat.openai.com/*
@@ -129,6 +129,7 @@ setting_usage_text
 
 const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
 const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
+const LSID_MENU_MODE = 'setting_menu_mode'
 
 ////////////////////////// CSS //////////////////////////
 const style = `
@@ -159,6 +160,13 @@ const style = `
         padding: 20px;
         gap: 10px;
     }
+
+    .buttonsContainer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;  /* 确保子元素在垂直方向上居中 */
+        width: 100%;
+    }    
 
     .settings-dropdown {
         outline: none;
@@ -361,6 +369,7 @@ document.head.appendChild(styleElement);
 let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
+let menu_mode = localStorage.getItem(LSID_MENU_MODE) || ''; // 后续还可以支持更多自定义模式。目前 '' 代表默认模式，即点击鼠标直接出菜单；非 '' （'shift'）代表需要同时按住 shift 键才会出菜单 
 
 function replace_all_textarea(text) {
     // 查找所有匹配按钮文本 "Save & Submit" 的 div
@@ -432,6 +441,27 @@ const contextMenu = document.createElement('div');
 const menuContainer = document.createElement('div');
 let isMenuPinned = false;
 
+function menuMode() {
+    return menu_mode;
+}
+
+function menuModeText() {
+    if (menuMode() == '') {
+        return '快捷模式'
+    } else {
+        return 'Shift模式'
+    }
+}
+
+function switchMode() {
+    if (menuMode() == '') {
+        menu_mode = 'shift';
+    } else {
+        menu_mode = '';
+    }
+    localStorage.setItem(LSID_MENU_MODE, menu_mode);
+}
+
 function createPathElement(svgPathData) {
     // 创建一个`path`元素并设置SVG路径数据
     const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -475,13 +505,13 @@ function createMenuSeparator() {
 }
 
 // 创建单个菜单项
-function createMenuItem(index, label, icon, action1, action2) {
+function createMenuItem(label, icon, action1, action2) {
     const menuItem = document.createElement('div');
     menuItem.classList.add('menu-item');
 
     const leftPart = document.createElement('button');
     leftPart.classList.add('menu-button', 'left-part');
-    leftPart.innerHTML = '' + index + '. ' + label;
+    leftPart.innerHTML = label;
 
     if (action1 == null) {
         leftPart.disabled = true;
@@ -560,7 +590,7 @@ function updateMenuItems() {
 
     menus.forEach((menu, index) => {
         menuContainer.appendChild(
-            createMenuItem(index + 1,
+            createMenuItem(
                 menu[0],
                 svgEditBeforeSend,
                 async function() {
@@ -573,15 +603,15 @@ function updateMenuItems() {
     });
 
     menuContainer.appendChild(createMenuSeparator());
-    menuContainer.appendChild(createMenuItem('S', '设置', null, function() {showSettingsModal();}, null));
-    menuContainer.appendChild(createMenuItem('A', '添加为模版', null, function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
+    menuContainer.appendChild(createMenuItem('设置', null, function() {showSettingsModal();}, null));
+    menuContainer.appendChild(createMenuItem('添加为模版', null, function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
 }
 
 function isMenuVisible() {
     return contextMenu.style.display == 'block';
 }
 
-function shouldResponseForContextMenu() {
+function shouldResponseForContextMenu(event) {
     if (isMenuPinned) {
         if (!isMenuVisible())  { 
             // Should not be here. Just to make sure pin is removed if menu is not visible.
@@ -593,6 +623,10 @@ function shouldResponseForContextMenu() {
     // 查找 settings-modal，如果 settings-modal 存在，就不响应右键菜单
     const settingsModal = document.querySelector('.settings-modal');
     if (settingsModal) {
+        return false;
+    }
+
+    if (menuMode() != '' && !event.shiftKey) {
         return false;
     }
 
@@ -608,7 +642,7 @@ function initContextMenu() {
     updateMenuItems();
 
     document.addEventListener('mouseup', function(event) {
-        if (!shouldResponseForContextMenu()) {
+        if (!shouldResponseForContextMenu(event)) {
             return;
         }
         const selectedText = window.getSelection().toString();
@@ -620,7 +654,7 @@ function initContextMenu() {
     });
 
     document.addEventListener('dblclick', function(event) {
-        if (!shouldResponseForContextMenu()) {
+        if (!shouldResponseForContextMenu(event)) {
             return;
         }
         showContextMenu(event);
@@ -793,7 +827,6 @@ function showSettingsModal() {
         }
     });
 
-    const buttonsContainer = document.createElement('div');
     const newSettingButton = document.createElement('button');
     newSettingButton.textContent = '添加新功能组';
     newSettingButton.className = 'settings-button';
@@ -849,8 +882,25 @@ function showSettingsModal() {
         deleteSettingButton.disabled = true;
     }
 
-    buttonsContainer.appendChild(newSettingButton);
-    buttonsContainer.appendChild(deleteSettingButton);
+    const modeSettingButton = document.createElement('button');
+    modeSettingButton.textContent = menuModeText();
+    modeSettingButton.className = 'settings-button';
+    modeSettingButton.addEventListener('click', () => { 
+        switchMode();
+        modeSettingButton.textContent = menuModeText();
+    });
+
+    const buttonsLeft = document.createElement('span');
+    const buttonsRight = document.createElement('span');
+    buttonsLeft.appendChild(newSettingButton);
+    buttonsLeft.appendChild(deleteSettingButton);
+    buttonsRight.appendChild(modeSettingButton);
+
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'buttonsContainer';
+    buttonsContainer.appendChild(buttonsLeft);
+    buttonsContainer.appendChild(buttonsRight);
+    
     modalContent.appendChild(settingsDropdown);
     modalContent.appendChild(buttonsContainer);
     modalContent.appendChild(textarea);
