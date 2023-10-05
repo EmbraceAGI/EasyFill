@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EasyFill
 // @namespace    http://easyfill.tool.elfe/
-// @version      0.4
+// @version      0.5
 // @description  超级方便的 GPT 对话助手，通过划选或点击，把内容填充到预置 prompt 模版直接发送。支持多个功能组设置。
 // @author       Elfe & ttmouse & GPT
 // @match        https://chat.openai.com/*
@@ -13,7 +13,7 @@
 // Licensed under the MIT License.
 
 const setting_usage_text = `使用说明
-通过 🪄 分隔按钮 
+通过 🪄 分隔按钮
 📖 之后的是直接在原文替代成链接的内容
 🪄🪄🪄🪄🪄🪄🪄🪄
 功能一
@@ -80,7 +80,7 @@ const default_setting_texts = [
 
 待翻译的内容：
 '''
-{__PLACE_HOLDER__} 
+{__PLACE_HOLDER__}
 '''
 🪄🪄🪄🪄🪄🪄🪄🪄
 中译英
@@ -122,7 +122,7 @@ const default_setting_texts = [
 '''
 {__PLACE_HOLDER__}
 '''
-    
+
 `,
 setting_usage_text
 ];
@@ -172,11 +172,11 @@ const style = `
         color: #000;
         border: 0;
         border-radius: 5px;
-    }    
+    }
 
     .settings-textarea {
         width: 100%;
-        height: calc(100% - 60px); 
+        height: calc(100% - 60px);
         resize: vertical;
         background-color: #fff;
         color: #000;
@@ -192,7 +192,7 @@ const style = `
         padding: 8px 18px;
         border: none;
         border-radius: 30px;
-        cursor: pointer;    
+        cursor: pointer;
         margin: 0 5px;
     }
 
@@ -210,7 +210,7 @@ const style = `
         display: none;
         position: absolute;
     }
-    
+
     #menuContainer {
         width: auto;
         display: inline-block;
@@ -221,17 +221,40 @@ const style = `
         box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 0px 0.5px, rgba(0, 0, 0, 0.1) 0px 2px 5px, rgba(0, 0, 0, 0.05) 0px 3px 3px;
         border-bottom: 1px solid #f0f0f0;
     }
+
+    #menuContainer div {
+        display: flex;
+        align-items: center;
+        width: auto;
+        padding: 2px 0;
+        margin: 0px;
+    }
+
+    #menuContainer div.menu-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 0;
+        font-weight: bold;
+    }
     
+    #menuContainer div.menu-separator {
+        width: 100%;
+        height: 1px;
+        background-color: #f0f0f0;
+        margin: 2px 0;
+        padding: 0px 10px;
+    }
+
     #menuContainer div.menu-item {
         display: flex;
         align-items: center;
         width: auto;
         max-width: calc(200px + 40px + 5px); /* 左侧按钮最大宽度 + 右侧按钮宽度 + 间隔 */
-        border-bottom: 1px solid #f0f0f0;
-        padding: 5px 0;
+        padding: 0 0;
         margin: 0 5px;
     }
-    
+
     #menuContainer button.menu-button {
         border: none;
         background: none;
@@ -241,28 +264,22 @@ const style = `
         border-radius: 5px;
         transition: background-color 0.3s ease;
     }
-    
+
     #menuContainer button.menu-button:hover {
-        background-color: #f1f1f1;
+        background-color: #469c7b5c;
     }
-    
+
     #menuContainer button.menu-button:disabled {
         height: 1px;
         color: #c6c6c600;
         padding: 0;
         border-bottom: 1px solid #dddddd8c;
     }
-    
+
     #menuContainer button.menu-button:disabled:hover {
         background: none;
     }
-    
-    #menuContainer button.menu-button img {
-        height: 20px;
-        width: 20px;
-        margin-right: 10px;
-    }
-    
+
     #menuContainer button.left-part {
         flex-grow: 1;
         flex-shrink: 0;
@@ -270,15 +287,19 @@ const style = `
         max-width: 200px;
         text-align: left;
     }
-    
+
     #menuContainer button.right-part {
         flex-grow: 0;
         flex-shrink: 0;
-        width: 30px;
+        width: 36px;
         text-align: right;
     }
-    
-    
+
+    #menuContainer button.icon {
+        width: 24px;
+        height: 24px;
+    }
+
     /* 使链接看起来更像链接 */
     .custom-link {
         text-decoration: underline;
@@ -295,7 +316,7 @@ const style = `
         width: max-content;  /* 根据内容设置宽度 */
         max-width: 300px;  /* 设置最大宽度 */
         white-space: normal;  /* 允许文本换行 */
-        line-height: 18px; 
+        line-height: 18px;
         max-height: 120px;
         overflow: hidden;
         background-color: #333;  /* 背景色 */
@@ -319,6 +340,8 @@ const style = `
     }
 `;
 
+const svgEditBeforeSend = "M896 128.426667H128c-47.146667 0-85.333333 38.186667-85.333333 85.333333V384h85.333333V212.906667h768v598.613333H128V640H42.666667v171.093333c0 47.146667 38.186667 84.48 85.333333 84.48h768c47.146667 0 85.333333-37.546667 85.333333-84.48v-597.333333c0-47.146667-38.186667-85.333333-85.333333-85.333333zM469.333333 682.666667l170.666667-170.666667-170.666667-170.666667v128H42.666667v85.333334h426.666666v128z";
+
 const styleElement = document.createElement('style');
 styleElement.innerHTML = style;
 document.head.appendChild(styleElement);
@@ -338,11 +361,11 @@ function replace_all_textarea(text) {
         if (button.textContent.trim() === 'Save & Submit') {
             // 向上查找其祖先元素，直到找到一个拥有 `flex flex-grow flex-col gap-3 max-w-full` 这个 class 的 div
             let parentDiv = button.closest('.flex.flex-grow.flex-col.gap-3.max-w-full');
-            
+
             if (parentDiv) {
                 // 在这个祖先 div 内，查找 `textarea` 元素
                 let textarea = parentDiv.querySelector('textarea');
-                
+
                 if (textarea) {
                     // 替换这个 `textarea` 的内容为 "TEMPLATE_TEXT"
                     textarea.value = text;
@@ -366,7 +389,7 @@ async function sendToGPT(template, selectedText, sendDirectly) {
     const inputEvent = new Event('input', { 'bubbles': true });
     inputElement.dispatchEvent(inputEvent);
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
 
     if (sendDirectly) {
         const sendButton = document.querySelector('[data-testid="send-button"]');
@@ -391,17 +414,39 @@ async function sendToGPT(template, selectedText, sendDirectly) {
         inputElement.setSelectionRange(cursorPosition, cursorPosition);
     }
 
-    
+
+}
+
+function createPathElement(svgPathData) {
+    // 创建一个`path`元素并设置SVG路径数据
+    const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathElement.setAttribute("d", svgPathData);
+    pathElement.setAttribute("fill", "#5D5D5D");
+    return pathElement;
+}
+
+function createMenuTitle() {
+    const menuTitle = document.createElement('div');
+    menuTitle.classList.add('menu-title');
+    menuTitle.innerHTML = setting_current_index;
+    menuTitle.innerHTML = setting_texts[setting_current_index].split('\n')[0];
+    return menuTitle;
+}
+
+function createMenuSeparator() {
+    const separator = document.createElement('div');
+    separator.classList.add('menu-separator');
+    return separator;
 }
 
 // 创建单个菜单项
-function createMenuItem(label, action1, action2) {
+function createMenuItem(index, label, icon, action1, action2) {
     const menuItem = document.createElement('div');
     menuItem.classList.add('menu-item');
 
     const leftPart = document.createElement('button');
     leftPart.classList.add('menu-button', 'left-part');
-    leftPart.innerHTML = label;
+    leftPart.innerHTML = '' + index + '. ' + label;
 
     if (action1 == null) {
         leftPart.disabled = true;
@@ -416,7 +461,17 @@ function createMenuItem(label, action1, action2) {
     if (action2 != null) {
         const rightPart = document.createElement('button')
         rightPart.classList.add('menu-button', 'right-part');
-        rightPart.innerHTML = '≋';
+
+        if (icon != null) {
+            // 创建一个SVG元素并设置属性
+            const rightIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            rightIcon.setAttribute("viewBox", "0 0 1024 1024");  // 这个属性需要保留在这里
+            rightIcon.classList.add("icon");
+            rightIcon.appendChild(createPathElement(icon));
+            rightPart.appendChild(rightIcon);
+        } else {
+            rightPart.innerHTML = '≋';
+        }
 
         rightPart.onclick = () => {
             action2();
@@ -424,7 +479,7 @@ function createMenuItem(label, action1, action2) {
         };
         menuItem.appendChild(rightPart);
     }
-    
+
     return menuItem;
 }
 
@@ -653,16 +708,16 @@ function showSettingsModal() {
 
         deleteSettingButton.disabled = setting_texts.length <= 1;
     });
-    
+
     // 检查是否只剩一个设置，如果是，则禁用删除按钮
     if (setting_texts.length <= 1) {
         deleteSettingButton.disabled = true;
-    }        
+    }
 
     buttonsContainer.appendChild(newSettingButton);
     buttonsContainer.appendChild(deleteSettingButton);
     modalContent.appendChild(settingsDropdown);
-    modalContent.appendChild(buttonsContainer); 
+    modalContent.appendChild(buttonsContainer);
     modalContent.appendChild(textarea);
     modalContent.appendChild(submitButton);
     modalContent.appendChild(cancelButton);
@@ -675,7 +730,7 @@ function showSettingsModal() {
             console.error("Trying to save a setting that doesn't exist.");
             return;
         }
-    
+
         setting_texts[selectedSettingIndex] = textarea.value;
         localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
         localStorage.setItem(LSID_SETTING_CURRENT_INDEX, selectedSettingIndex.toString());
@@ -709,14 +764,14 @@ function showAddTemplateModal(selectText) {
     inputField.type = 'text';
     inputField.placeholder = '这里填写会出现在菜单上的功能名称';
     inputField.className = 'settings-input';
-    
+
     const labelInstruction = document.createElement('p');
     labelInstruction.textContent = '下方是 prompt 模版，使用 {__PLACE_HOLDER__} 作为占位符。'
 
     const textarea = document.createElement('textarea');
     textarea.className = 'settings-textarea';
     textarea.value = selectText;
-    
+
     const submitButton = document.createElement('button');
     submitButton.className = 'settings-button';
     submitButton.textContent = '添加到选定功能组';
@@ -747,10 +802,10 @@ function showAddTemplateModal(selectText) {
     settingsDropdown.selectedIndex = choosedIndex;
     settingsDropdown.addEventListener('change', (e) => {
         choosedIndex = e.target.value;
-    });     
+    });
 
     modalContent.appendChild(labelText);
-    modalContent.appendChild(settingsDropdown); 
+    modalContent.appendChild(settingsDropdown);
     modalContent.appendChild(inputField);
     modalContent.appendChild(labelInstruction);
     modalContent.appendChild(textarea);
@@ -776,7 +831,7 @@ function showAddTemplateModal(selectText) {
         } else {
             setting_texts[choosedIndex] = original + toAdd;
         }
-        
+
         localStorage.setItem(LSID_SETTING_TEXTS, JSON.stringify(setting_texts));
         current_setting_text = setting_texts[setting_current_index];
         if (current_setting_text) {
@@ -828,7 +883,7 @@ function parseClicks(settingText) {
         if (index >=0) {
             // 如果有匹配的模板，则将新的[regExpression, template] 插入到该模板前面
             clicks.splice(index, 0, [regExpression, template]);
-            
+
         } else {
             // 如果没有匹配的模板，则将新的[regExpression, template] 添加到数组末尾
             clicks.push([regExpression, template]);
@@ -856,9 +911,14 @@ function updateMenuItems() {
     parseSettingsText(current_setting_text);
 
     menuContainer.innerHTML = '';
-    menus.forEach(menu => {
+    menuContainer.appendChild(createMenuTitle());
+    menuContainer.appendChild(createMenuSeparator());
+
+    menus.forEach((menu, index) => {
         menuContainer.appendChild(
-            createMenuItem(menu[0], 
+            createMenuItem(index + 1,
+                menu[0],
+                svgEditBeforeSend,
                 async function() {
                     await sendToGPT(menu[1], window.getSelection().toString().trim(), true);
                 },
@@ -867,8 +927,10 @@ function updateMenuItems() {
                 },
         ));
     });
-    menuContainer.appendChild(createMenuItem('设置', function() {showSettingsModal();}, null));
-    menuContainer.appendChild(createMenuItem('添加为模版', function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
+
+    menuContainer.appendChild(createMenuSeparator());
+    menuContainer.appendChild(createMenuItem('S', '设置', null, function() {showSettingsModal();}, null));
+    menuContainer.appendChild(createMenuItem('A', '添加为模版', null, function() {showAddTemplateModal(window.getSelection().toString().trim());}, null));
 }
 
 ////////////////////////// Main //////////////////////////
@@ -876,7 +938,7 @@ function updateMenuItems() {
 // 创建上下文菜单
 const contextMenu = document.createElement('div');
 const menuContainer = document.createElement('div');
-contextMenu.id = 'contextMenu'; 
+contextMenu.id = 'contextMenu';
 menuContainer.id = 'menuContainer';
 contextMenu.appendChild(menuContainer);
 document.body.appendChild(contextMenu);
