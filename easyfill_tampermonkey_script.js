@@ -486,9 +486,28 @@ function createMenuItem(index, label, icon, action1, action2) {
 function hideContextMenu() {
     contextMenu.style.display = 'none';
 }
+
 function showContextMenu(event) {
-    contextMenu.style.left = `${event.clientX}px`;
-    contextMenu.style.top = `${event.clientY}px`;
+    const margin  = 20;
+    const width = contextMenu.offsetWidth + margin;
+    const height = contextMenu.offsetHeight + margin;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // 如果菜单超出了右侧窗口边缘
+    if (event.clientX + width > windowWidth) {
+        contextMenu.style.left = `${windowWidth - width}px`;
+    } else {
+        contextMenu.style.left = `${event.clientX}px`;
+    }
+    
+    // 如果菜单超出了底部窗口边缘
+    if (event.clientY + height > windowHeight) {
+        contextMenu.style.top = `${windowHeight - height}px`;
+    } else {
+        contextMenu.style.top = `${event.clientY}px`;
+    }
+    
     contextMenu.style.display = 'block';
 }
 
