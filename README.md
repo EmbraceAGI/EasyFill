@@ -92,9 +92,5 @@ https://www.youtube.com/watch?v=1vaokYzMu6c
 ![T2](imgs/troubleshooting2.png)
   
 
-如果你想尝试 Chrome 插件版本，请   
-
-1.  [下载插件 zip 包](./EasyFillChromExtension.zip)，解压到自己通常放应用程序的目录下。  
-2. 打开 [chrome://extensions/](chrome://extensions/) ,右上角，打开开发者模式，再在左上角，选择 "加载已解压的扩展呢程序"。    
-![Alt text](./imgs/chrome.png)  
+Chrome 插件版本请稍再等等。
 
