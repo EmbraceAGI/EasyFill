@@ -1,7 +1,7 @@
-# EasyFill  
+#  ![logo](imgs/logo.jpg) EasyFill
 这是一个能让你和 GPT 的对话变得无比流畅的小工具。  
 
-![logo](imgs/logo.jpg)
+
 
 将 [Easy Fill 油猴脚本](./easyfill_tampermonkey_script.js) 添加到 Tampermonkey 插件后，在 chat.openai.com 页面开启并使用。
 

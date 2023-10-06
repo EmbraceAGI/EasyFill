@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EasyFill
 // @namespace    http://easyfill.tool.elfe/
-// @version      0.6
+// @version      0.9
 // @description  超级方便的 GPT 对话助手，通过划选或点击，把内容填充到预置 prompt 模版直接发送。支持多个功能组设置。
 // @author       Elfe & ttmouse & GPT
 // @match        https://chat.openai.com/*
@@ -284,6 +284,7 @@ const style = `
         align-items: center;
         width: auto;
         max-width: 200px; 
+        min-width: 120px;
         padding: 0 0;
         margin: 0 5px;
     }
