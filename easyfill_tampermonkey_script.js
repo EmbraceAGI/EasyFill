@@ -407,6 +407,9 @@ function replace_all_textarea(text) {
                 if (textarea) {
                     // 替换这个 `textarea` 的内容为 "TEMPLATE_TEXT"
                     textarea.value = text;
+
+                    const inputEvent = new Event('input', { 'bubbles': true });
+                    textarea.dispatchEvent(inputEvent);
                 }
             }
         }
