@@ -78,6 +78,8 @@ https://www.youtube.com/watch?v=1vaokYzMu6c
 ## 特别说明  
 目前我只在电脑上 Chrome 浏览器的油猴插件里测试过，别的环境我不了解，可能暂时还支持不了。  
 脚本本身不需要特别权限，我特意避开了需要跨域等特殊权限的功能，理论上安装后应该能正常运行。  
+[安装使用教程请看这里](https://mp.weixin.qq.com/s/zLVEH9wgi2So4-Lm3Prhmw)
+
 
 如果电脑上的 Chrome 安装后仍旧看不到效果：  
 1. 确认脚本已启用：在 https://chat.openai.com/ 的网页上你应该能看到这个脚本可用，确保它是开启的。  
