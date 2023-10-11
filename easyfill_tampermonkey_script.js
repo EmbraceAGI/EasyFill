@@ -269,6 +269,7 @@ const style = `
         justify-content: center;
         padding: 5px 0;
         font-weight: bold;
+        cursor: pointer;
     }
     
     #menuContainer div.menu-separator {
@@ -335,6 +336,38 @@ const style = `
     #menuContainer button.icon {
         width: 24px;
         height: 24px;
+    }
+
+    #groupSelectList {
+        border: 0px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        z-index: 1000;
+        background-color: #fff;  
+        color: #000;    
+    }
+    
+    #groupSelectList div {
+        padding: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        background-color: #fff;  
+        color: #000; 
+        padding: 10px;
+    }
+
+    #titleDropdown div:first-child {
+        padding-top: 20px;  // 给第一个子元素的上边增加20px的padding
+    }
+    
+    #titleDropdown div:last-child {
+        padding-bottom: 20px;  // 给最后一个子元素的下边增加20px的padding
+    }
+
+    #groupSelectList div:hover {
+        background-color: #469c7b5c;
     }
 
     /* 使链接看起来更像链接 */
@@ -517,6 +550,16 @@ function createMenuTitle() {
     menuTitle.classList.add('menu-title');
     menuTitle.innerHTML = setting_current_index;
     menuTitle.innerHTML = setting_texts[setting_current_index].split('\n')[0];
+    menuTitle.addEventListener('mouseup', function(e) {
+        e.stopPropagation();  // 阻止事件冒泡
+    
+        let dropdown = document.getElementById('groupSelectList');
+        if (dropdown) {
+            dropdown.remove(); // 如果下拉列表已经存在，那么移除它
+        } else {
+            createGroupSelectList();
+        }
+    });
     return menuTitle;
 }
 
@@ -585,18 +628,20 @@ function showContextMenu(event) {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     
-    // 如果菜单超出了右侧窗口边缘
-    if (event.clientX + width > windowWidth) {
-        contextMenu.style.left = `${windowWidth - width}px`;
-    } else {
-        contextMenu.style.left = `${event.clientX}px`;
-    }
-    
-    // 如果菜单超出了底部窗口边缘
-    if (event.clientY + height > windowHeight) {
-        contextMenu.style.top = `${windowHeight - height}px`;
-    } else {
-        contextMenu.style.top = `${event.clientY}px`;
+    if (event) {
+        // 如果菜单超出了右侧窗口边缘
+        if (event.clientX + width > windowWidth) {
+            contextMenu.style.left = `${windowWidth - width}px`;
+        } else {
+            contextMenu.style.left = `${event.clientX}px`;
+        }
+        
+        // 如果菜单超出了底部窗口边缘
+        if (event.clientY + height > windowHeight) {
+            contextMenu.style.top = `${windowHeight - height}px`;
+        } else {
+            contextMenu.style.top = `${event.clientY}px`;
+        }
     }
     
     contextMenu.style.display = 'block';
@@ -688,6 +733,62 @@ function initContextMenu() {
         }
     });
 }
+
+////////////////////////// Menu Click&choose //////////////////////////
+
+// setting_texts.forEach((text, index) => {
+//     const option = document.createElement('option');
+//     option.value = index;
+//     option.text = text.split('\n')[0]; // Assuming the first line is a title or identifier
+//     settingsDropdown.appendChild(option);
+// });
+// settingsDropdown.selectedIndex = setting_current_index;
+// settingsDropdown.addEventListener('change', (e) => {
+//     const selectedIndex = e.target.value;
+//     textarea.value = setting_texts[selectedIndex];
+//     if (setting_texts.length <= 1) {
+//         deleteSettingButton.disabled = true;
+//     } else {
+//         deleteSettingButton.disabled = false;
+//     }
+// });
+
+
+function createGroupSelectList() {
+    const dropdown = document.createElement('div');
+    dropdown.id = 'groupSelectList';
+    dropdown.style.maxHeight = '500px';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.position = 'fixed';  // 使用固定定位
+
+    setting_texts.forEach((text, index) => {
+        const item = document.createElement('div');
+        item.innerText = text.split('\n')[0]; // Assuming the first line is a title or identifier
+        item.addEventListener('click', function() {
+            setting_current_index = index;
+            current_setting_text = setting_texts[setting_current_index];
+            updateMenuItems();
+            dropdown.remove(); // 选择后，移除下拉列表
+            showContextMenu(null);
+        });
+        dropdown.appendChild(item);
+    });
+
+    const rect = contextMenu.getBoundingClientRect();
+
+    // 先将dropdown添加到文档中，但将其设置为不可见
+    dropdown.style.visibility = 'hidden';
+    document.body.appendChild(dropdown);
+
+    // 现在我们可以获取其实际尺寸了
+    const dropdownRect = dropdown.getBoundingClientRect();
+    dropdown.style.top = rect.top + 'px'; 
+    dropdown.style.left = (rect.left - dropdownRect.width) + 'px'; 
+
+    // 然后再将其设置为可见
+    dropdown.style.visibility = 'visible';
+}
+
 
 ////////////////////////// Easy Click functions //////////////////////////
 
