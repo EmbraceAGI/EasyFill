@@ -126,6 +126,7 @@ setting_usage_text
 const LSID_SETTING_TEXTS = 'setting_texts_v0.4';
 const LSID_SETTING_CURRENT_INDEX = 'setting_current_index_v0.4';
 const LSID_MENU_MODE = 'setting_menu_mode'
+const LSID_CONTEXT_MENU_PINNED = 'context_menu_pinned';
 
 ////////////////////////// CSS //////////////////////////
 const style = `
@@ -162,7 +163,7 @@ const style = `
         justify-content: space-between;
         align-items: center;  /* 确保子元素在垂直方向上居中 */
         width: 100%;
-    }    
+    }
 
     .settings-dropdown {
         outline: none;
@@ -222,9 +223,9 @@ const style = `
         flex-direction: column;
         gap: 10px;
         padding: 20px;
-        z-index: 2000; 
+        z-index: 2000;
     }
-    
+
     .confirm-content {
         color: #535e5e;
         display: flex;
@@ -239,11 +240,11 @@ const style = `
 
     .pinned-menu {
         position: fixed;
-        right: 10px; 
-        top: 50%; 
+        right: 10px;
+        top: 50%;
         transform: translateY(-50%); /* 这将使元素垂直居中，无论其高度是多少 */
     }
-    
+
     #menuContainer {
         width: auto;
         display: inline-block;
@@ -271,7 +272,7 @@ const style = `
         font-weight: bold;
         cursor: pointer;
     }
-    
+
     #menuContainer div.menu-separator {
         width: 100%;
         height: 1px;
@@ -284,7 +285,7 @@ const style = `
         display: flex;
         align-items: center;
         width: auto;
-        max-width: 200px; 
+        max-width: 200px;
         min-width: 120px;
         padding: 0 0;
         margin: 0 5px;
@@ -345,25 +346,17 @@ const style = `
         display: flex;
         flex-direction: column;
         z-index: 1000;
-        background-color: #fff;  
-        color: #000;    
+        background-color: #fff;
+        color: #000;
     }
-    
+
     #groupSelectList div {
         padding: 5px;
         cursor: pointer;
         transition: background-color 0.2s;
-        background-color: #fff;  
-        color: #000; 
-        padding: 10px;
-    }
-
-    #titleDropdown div:first-child {
-        padding-top: 20px;  // 给第一个子元素的上边增加20px的padding
-    }
-    
-    #titleDropdown div:last-child {
-        padding-bottom: 20px;  // 给最后一个子元素的下边增加20px的padding
+        background-color: #fff;
+        color: #000;
+        padding: 5px 20px;
     }
 
     #groupSelectList div:hover {
@@ -421,7 +414,8 @@ document.head.appendChild(styleElement);
 let setting_texts = JSON.parse(localStorage.getItem(LSID_SETTING_TEXTS)) || default_setting_texts;
 let setting_current_index = localStorage.getItem(LSID_SETTING_CURRENT_INDEX) || 0;
 let current_setting_text = setting_texts[setting_current_index];
-let menu_mode = localStorage.getItem(LSID_MENU_MODE) || ''; // 后续还可以支持更多自定义模式。目前 '' 代表默认模式，即点击鼠标直接出菜单；非 '' （'shift'）代表需要同时按住 shift 键才会出菜单 
+let menu_mode = localStorage.getItem(LSID_MENU_MODE) || ''; // 后续还可以支持更多自定义模式。目前 '' 代表默认模式，即点击鼠标直接出菜单；非 '' （'shift'）代表需要同时按住 shift 键才会出菜单
+let isMenuPinned = localStorage.getItem(LSID_CONTEXT_MENU_PINNED) || false;
 
 function replace_all_textarea(text) {
     // 查找所有匹配按钮文本 "Save & Submit" 的 div
@@ -494,7 +488,7 @@ async function sendToGPT(template, selectedText, sendDirectly) {
 // 创建上下文菜单
 const contextMenu = document.createElement('div');
 const menuContainer = document.createElement('div');
-let isMenuPinned = false;
+let isGroupSelectListShown = false;
 
 function menuMode() {
     return menu_mode;
@@ -531,16 +525,22 @@ function createPinButton() {
     pinButton.style.position = 'absolute';
     pinButton.style.right = '5px';
     pinButton.style.top = '5px';
+    if (isMenuPinned) {
+        pinButton.innerHTML = '🔓';
+        menuContainer.classList.add('pinned-menu');
+    } 
+
     pinButton.onclick = function() {
         isMenuPinned = !isMenuPinned;
+        localStorage.setItem(LSID_CONTEXT_MENU_PINNED, isMenuPinned);
         pinButton.innerHTML = isMenuPinned ? '🔓' : '📌';
-    
+
         if (isMenuPinned) {
             menuContainer.classList.add('pinned-menu');
         } else {
             menuContainer.classList.remove('pinned-menu');
         }
-    };    
+    };
     return pinButton;
 }
 
@@ -552,12 +552,14 @@ function createMenuTitle() {
     menuTitle.innerHTML = setting_texts[setting_current_index].split('\n')[0];
     menuTitle.addEventListener('mouseup', function(e) {
         e.stopPropagation();  // 阻止事件冒泡
-    
+
         let dropdown = document.getElementById('groupSelectList');
         if (dropdown) {
             dropdown.remove(); // 如果下拉列表已经存在，那么移除它
+            isGroupSelectListShown = false;
         } else {
             createGroupSelectList();
+            isGroupSelectListShown = true;
         }
     });
     return menuTitle;
@@ -614,7 +616,7 @@ function createMenuItem(label, icon, action1, action2) {
 }
 
 function hideContextMenu() {
-    if (isMenuPinned) {
+    if (isMenuPinned || isGroupSelectListShown) {
         return;
     }
 
@@ -627,7 +629,7 @@ function showContextMenu(event) {
     const height = contextMenu.offsetHeight + margin;
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
-    
+
     if (event) {
         // 如果菜单超出了右侧窗口边缘
         if (event.clientX + width > windowWidth) {
@@ -635,7 +637,7 @@ function showContextMenu(event) {
         } else {
             contextMenu.style.left = `${event.clientX}px`;
         }
-        
+
         // 如果菜单超出了底部窗口边缘
         if (event.clientY + height > windowHeight) {
             contextMenu.style.top = `${windowHeight - height}px`;
@@ -643,7 +645,7 @@ function showContextMenu(event) {
             contextMenu.style.top = `${event.clientY}px`;
         }
     }
-    
+
     contextMenu.style.display = 'block';
 }
 
@@ -680,7 +682,7 @@ function isMenuVisible() {
 
 function shouldResponseForContextMenu(event) {
     if (isMenuPinned) {
-        if (!isMenuVisible())  { 
+        if (!isMenuVisible())  {
             // Should not be here. Just to make sure pin is removed if menu is not visible.
             isMenuPinned = false;
         }
@@ -732,6 +734,10 @@ function initContextMenu() {
             hideContextMenu();
         }
     });
+
+    if(isMenuPinned) {
+        showContextMenu(null);
+    }
 }
 
 ////////////////////////// Menu Click&choose //////////////////////////
@@ -769,12 +775,13 @@ function createGroupSelectList() {
             current_setting_text = setting_texts[setting_current_index];
             updateMenuItems();
             dropdown.remove(); // 选择后，移除下拉列表
+            isGroupSelectListShown = false;
             showContextMenu(null);
         });
         dropdown.appendChild(item);
     });
 
-    const rect = contextMenu.getBoundingClientRect();
+    const rect = menuContainer.getBoundingClientRect();
 
     // 先将dropdown添加到文档中，但将其设置为不可见
     dropdown.style.visibility = 'hidden';
@@ -782,11 +789,12 @@ function createGroupSelectList() {
 
     // 现在我们可以获取其实际尺寸了
     const dropdownRect = dropdown.getBoundingClientRect();
-    dropdown.style.top = rect.top + 'px'; 
-    dropdown.style.left = (rect.left - dropdownRect.width) + 'px'; 
+    dropdown.style.top = rect.top + 'px';
+    dropdown.style.left = (rect.left - dropdownRect.width) + 'px';
 
     // 然后再将其设置为可见
     dropdown.style.visibility = 'visible';
+    isGroupSelectListShown = true;
 }
 
 
@@ -1014,7 +1022,7 @@ function showSettingsModal() {
     const modeSettingButton = document.createElement('button');
     modeSettingButton.textContent = menuModeText();
     modeSettingButton.className = 'settings-button';
-    modeSettingButton.addEventListener('click', () => { 
+    modeSettingButton.addEventListener('click', () => {
         switchMode();
         modeSettingButton.textContent = menuModeText();
     });
@@ -1053,7 +1061,7 @@ function showSettingsModal() {
     buttonsContainer.className = 'buttonsContainer';
     buttonsContainer.appendChild(buttonsLeft);
     buttonsContainer.appendChild(buttonsRight);
-    
+
     modalContent.appendChild(settingsDropdown);
     modalContent.appendChild(buttonsContainer);
     modalContent.appendChild(textarea);
