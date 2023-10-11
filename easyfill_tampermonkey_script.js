@@ -691,10 +691,7 @@ function initContextMenu() {
 
 ////////////////////////// Easy Click functions //////////////////////////
 
-let isUpdating = false;
-let rerunTimeout;
 let intervalID;
-let shouldContinue = true;
 
 // 点击事件处理器
 async function clickHandler(event) {
@@ -739,10 +736,6 @@ function replace_text(original) {
 
 // 处理元素
 function processElement(element) {
-    if (isUpdating) {
-        return;
-    }
-
     const hidden_characters = "\u200B\u200B\u200B\u200B\u200B\u200B";
 
     let innerHTML = element.innerHTML;
@@ -778,39 +771,15 @@ function processAllElements() {
     });
 }
 
+let rerunTimeout;
 // 这个部分是用来检测GPT是否在更新的
 function checkUpdateStatus() {
-    if (!shouldContinue) return;
-    console.log('[Debug] 运行 checkUpdateStatus');
-    const allButtons = document.querySelectorAll('button');
-    const stopGeneratingElement = Array.from(allButtons).find(el => el.textContent.includes("Stop generating"));
-    if (!stopGeneratingElement && isUpdating) { // 内容更新完成
-        console.log('内容更新完成，准备添加链接');
-        isUpdating = false; // 更新状态设置为false
-
-        if (rerunTimeout) {
-            clearTimeout(rerunTimeout); // 清除延时
-            console.log('[Debug] 清除之前的延时');
-        }
-        // 设置延时，等待2秒
-        rerunTimeout = setTimeout(() => {
-            processAllElements();
-            stopListening();
-        }, 300);
+    if (rerunTimeout) {
+        clearTimeout(rerunTimeout); // 清除延时
+        console.log('[Debug] 清除之前的延时');
     }
-}
-
-function startListening() {
-    isUpdating = true;
-    shouldContinue = true;
-    intervalID = setInterval(checkUpdateStatus, 1000);
-    console.log('监听已开启');
-}
-
-function stopListening() {
-    shouldContinue = false;
-    clearInterval(intervalID);
-    console.log('监听已停止');
+    // 设置延时，等待0.5秒
+    rerunTimeout = setTimeout(processAllElements, 500);
 }
 
 ////////////////////////// Settings functions //////////////////////////
@@ -1162,7 +1131,7 @@ initContextMenu();
 const observer = new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
         if (entry.name.includes('https://chat.openai.com/backend-api/conversation')) {
-            startListening();
+            checkUpdateStatus();
         }
     }
 });
