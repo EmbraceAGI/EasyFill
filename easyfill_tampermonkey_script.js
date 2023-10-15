@@ -828,11 +828,21 @@ async function clickHandler(event) {
 
 }
 
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&apos;");
+}
+
 function replace_text(original) {
     clicks.forEach(([regExpression, template]) => {
         original = original.replace(regExpression, (match, p1) => {
             // 使用模板替换找到的匹配项
             let replaced = template.replace(/{__PLACE_HOLDER__}/g, p1);
+            replaced = escapeHtml(replaced);
             if (template.includes('{__PLACE_HOLDER__}')) {
                 return `<a class="custom-link" data-text="${replaced}">${p1}</a>`;
             } else {
@@ -853,8 +863,6 @@ function processElement(element) {
         return; // 不重复处理
     }
 
-    // 处理[[ ]] 符号
-    const bracketRegex = /\[\[(.*?)\]\]/g;
     innerHTML = replace_text(innerHTML);
 
     // 替换了 innerHTML 后，原本网页中 Copy code 之类的事件监听就失效了。
