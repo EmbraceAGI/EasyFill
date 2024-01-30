@@ -12,6 +12,12 @@
 (function() {
     'use strict';
 
+    // 在这个列表里添加你想要用 @ 唤起的 gizmo
+    // 每条记录一行，都用逗号分隔
+    // 记录的 : 前面是唤起词，不需要拘泥于原来的名字，怎么简便怎么来就好
+    // ：后面是 gizmo id，可以通过 url 找到 gizmo id
+    // 例如 https://chat.openai.com/g/g-SUOFbmGvx-cool-teacher Cool taecher 的 id 是 g-SUOFbmGvx
+    // 如下设置后就可以用 @老师 来唤起
     var nameIdMap = {
         '老师': 'g-SUOFbmGvx',
         '单词故事': 'g-5HkDxo4K2',
