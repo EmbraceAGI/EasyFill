@@ -78,7 +78,7 @@
                     } else {
                         //类似 https://chat.openai.com/g/g-Qhd148tN3-sui-shou-ji 这样的字符串，提取出其中 g-xxxxxx 的部分，共11个字符
                         if (text.startsWith('https://chat.openai.com/g/')) {
-                            gizmoId = text.substring(28, 39);
+                            gizmoId = text.substring(26, 37);
                         }
                     }
 
