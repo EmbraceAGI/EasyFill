@@ -120,6 +120,28 @@ const default_setting_texts = [
 '''
 
 `,
+`
+文字配插图
+先提取文字中要素，然后配一张黑白插图
+通过 🪄 分隔按钮
+🪄🪄🪄🪄🪄🪄🪄🪄
+提取要素
+&g-rzeBPKJPI  请对这段内容提取要素，给出插图方案：
+{__PLACE_HOLDER__}
+
+注意：每个方案一行字，并且用 🏞️ 🏞️ 括号起来
+例如：
+方案1:
+🏞️可爱猫咪玩毛线球：画面最前方一个毛线球。后面有一只正屁股后撅、蓄力扑向毛球的猫咪。🏞️
+🪄🪄🪄🪄🪄🪄🪄🪄
+画插图
+&g-Qs1wbwJEP 请根据这个设计，画一张插图
+{__PLACE_HOLDER__}
+📖📖📖📖📖📖📖📖
+🏞️(.*?)🏞️
+&g-Qs1wbwJEP 请根据这个设计，画一张插图
+{__PLACE_HOLDER__}
+`,
 setting_usage_text
 ];
 
@@ -528,7 +550,7 @@ function createPinButton() {
     if (isMenuPinned) {
         pinButton.innerHTML = '🔓';
         menuContainer.classList.add('pinned-menu');
-    } 
+    }
 
     pinButton.onclick = function() {
         isMenuPinned = !isMenuPinned;
@@ -772,6 +794,7 @@ function createGroupSelectList() {
         item.innerText = text.split('\n')[0]; // Assuming the first line is a title or identifier
         item.addEventListener('click', function() {
             setting_current_index = index;
+            localStorage.setItem(LSID_SETTING_CURRENT_INDEX, setting_current_index);
             current_setting_text = setting_texts[setting_current_index];
             updateMenuItems();
             dropdown.remove(); // 选择后，移除下拉列表
@@ -879,11 +902,12 @@ function processElement(element) {
 }
 
 function processAllElements() {
-    // 先找到父级对象
-    const parentElements = document.querySelectorAll('.flex.flex-grow.flex-col.gap-3.max-w-full');
+    // 使用数据属性来找到父级元素
+    const parentElements = document.querySelectorAll('[data-message-author-role="assistant"]');
+
     parentElements.forEach(parent => {
-        // 在父级对象下面找特定的子元素
-        const chatRecordElements = parent.querySelectorAll('div.markdown.prose.w-full.break-words,li');
+        // 在父级元素下面找到特定的子元素，例如类名为 `markdown` 和 `prose` 的 `div`
+        const chatRecordElements = parent.querySelectorAll('div.markdown.prose.w-full.break-words');
         chatRecordElements.forEach(processElement);
     });
 }

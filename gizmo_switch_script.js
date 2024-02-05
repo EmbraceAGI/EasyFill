@@ -20,12 +20,8 @@
     // 如下设置后就可以用 &老师 来唤起
     var nameIdMap = {
         '老师': 'g-SUOFbmGvx',
-        'KK的心灵鸡汤': 'g-xYjexoNlS',
-        '围炉夜话': 'g-CaTmdpE0q',
-        '科学1':'g-yNMlScqhw',
-        '科学2':'g-piCCxtoOY',
-        '科学3':'g-iF6xCbmrX',
-        '科学4':'g-fio99RM6V',
+        '画1':'g-rzeBPKJPI',
+        '画2':'g-Qs1wbwJEP',
     };
 
     var gizmoId = '';
@@ -61,18 +57,28 @@
                 if (content && content.parts && content.parts.length > 0) {
                     var text = content.parts[0];
 
-                    // 检查是否以 & 开头, 或者 gizmoId 变量不为空
-                    if (text.startsWith('&')) {
-                        // 读取 & 后的内容直到空格
+                    // 检查是否以 & 或 @ 开头, 或者 gizmoId 变量不为空
+                    if (text.startsWith('&') || text.startsWith('@')) {
+                        // 读取第一个空格之前的内容
                         var name = text.split(' ')[0].substring(1);
 
                         // 查找 & 的 name 所对应的 id
                         if (name in nameIdMap) {
                             gizmoId = nameIdMap[name]; // 更新对话的 gizmo
                         } else {
-                            if (name == '&') { // 用 && 还原到无 gizmo 的状态
+                            if (name == '&' || name == '@') { // 用 && 或 @@ 还原到无 gizmo 的状态
                                 gizmoId = '';
+                            } else {
+                                // 如果是 g-SkylzRegk 这样的形式
+                                if (name.startsWith('g-') && name.length == 11) {
+                                    gizmoId = name;
+                                }
                             }
+                        }
+                    } else {
+                        //类似 https://chat.openai.com/g/g-Qhd148tN3-sui-shou-ji 这样的字符串，提取出其中 g-xxxxxx 的部分，共11个字符
+                        if (text.startsWith('https://chat.openai.com/g/')) {
+                            gizmoId = text.substring(28, 39);
                         }
                     }
 
